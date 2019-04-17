@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Music Muse</title>
+  <link rel="stylesheet" type="text/css" href="css/musicmuse.css">
+  <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+  <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+<nav class="navbar navbar-inverse" role="navigation">
+  <div class="container-fluid"> 
+  <div class="navbar-header">
+    <a class="navbar-brand" href="#">Music Muse</a>
+  </div>
+  <form class="navbar-form navbar-left" role="search">
+    <div class="form-group">
+      <input type="text" class="form-control" placeholder="music title" id="songSearch">
+    </div>
+    <button type="submit" class="btn btn-default" onclick="searchMusic()">Search</button>
+  </form>
+  </div>
+</nav>
+
+<div class="root" id="vislization" >
+
+    <svg width="1000" height="1000" style="margin-left:100px; margin-right:0px;margin-top: -80px; float: left;"></svg>
+</div>
+
+<div class="panel panel-success" id="clusterpanel" style="display: none;">
+  <div class="panel-heading">
+    <h3 class="panel-title">Songs in the cluster</h3>
+    
+  </div>
+  <ul id="SongList">
+  
+  </ul>
+  <div class="panel-body">
+    
+  </div>
+</div>
+
+</body>
+</html>
+
+
+<script>
+var blues = d3.scaleOrdinal(d3.schemeBlues[9]);
+
+function searchMusic(){
+  document.getElementById("clusterpanel").style.display="none";
+  let svg = d3.select("svg");
+    let margin = {
+        left: 100,
+        top: 100,
+        right: 100,
+        bottom: 100
+    };
+
+    let w = +svg.attr('width') - margin.left - margin.right;
+    let h = +svg.attr('height') - margin.top - margin.bottom;
+
+    let rootG = svg.append('g').attr('transform',`translate(${+svg.attr("width")/2}, ${+svg.attr("height")/2})`);
+    const r = h/2;
+
+    /*rootG.append('circle')
+        .attr('r',r)
+        .style('fill', 'none')
+        .style('stroke','#D9D9D9')
+        .style("stroke-dasharray", ("10,3"));
+    */
+    rootG.append('circle')
+        .attr('r',r*0.25)
+        .style('fill', 'none')
+        .style('stroke','#D9D9D9')
+        .style("stroke-dasharray", ("10,3"));
+
+    rootG.append('circle')
+        .attr('r',r*0.5)
+        .style('fill', 'none')
+        .style('stroke','#D9D9D9')
+        .style("stroke-dasharray", ("10,3"));
+
+    rootG.append('circle')
+        .attr('r',r*0.75)
+        .style('fill', 'none')
+        .style('stroke','#D9D9D9')
+        .style("stroke-dasharray", ("10,3"));
+
+
+
+    d3.json('song.json')
+        .then(data=>{
+            console.log(data);
+            const maxR = 50;
+
+            const perAngel = 2*Math.PI / data.length;
+            const maxDis = d3.max(data, d=>d.centerDistance);
+            const maxSL = d3.max(data, d=>d.songs.length);
+            const scale = d3.scaleLinear()
+                .domain([0,maxDis])
+                .range([0,r - maxR -10]);
+
+            const scaleR = d3.scaleLinear()
+                .domain([0,maxSL])
+                .range([0,maxR]);
+
+            const scaleC = function(idx){
+                const color = d3.interpolateRainbow;
+                const scale = d3.scaleLinear().domain([0,data.length]).range([0,1]);
+                return color(scale(idx));
+            };
+
+            data.forEach((d,i)=>{
+                const y = scale(d.centerDistance) * Math.sin(i * perAngel);
+                const x = scale(d.centerDistance) * Math.cos(i * perAngel);
+
+                const yl = r * Math.sin(i * perAngel);
+                const xl = r * Math.cos(i * perAngel);
+                rootG.append('line')
+                    .attr('x1', 0)
+                    .attr('y1', 0)
+                    .attr('x2', xl)
+                    .attr('y2', yl)
+                    .style('stroke', '#6495ED')
+                    .style('stroke-width',2);
+
+                var cd = rootG.append('circle')
+                    .attr('cx', x)
+                    .attr('cy', y)
+                    .attr('r',scaleR(d.songs.length))
+                    .style('fill',blues(i))
+                    .style('stroke','#D9D9D9')
+
+                    cd.on("click",function(){
+                      document.getElementById("clusterpanel").style.display="";
+                      var s_l = document.getElementById("SongList")
+                      var s_l_children = s_l.childNodes;
+                      for(var i = s_l_children.length - 1; i >= 0; i--) { 
+
+                      
+                        console.info(i) 
+                        s_l.removeChild(s_l_children[i]); 
+                        }
+
+
+                      for (var i = 0; i<d.songs.length;i++) {
+                        var s = document.createElement("LI");
+                        var s_n = document.createTextNode(d.songs[i]);
+
+                        s.appendChild(s_n);
+                        document.getElementById("SongList").appendChild(s);
+                      }
+
+                      
+                    });
+            });
+
+            rootG.append("circle")
+                .attr('r',10)
+                .style('fill','#D9D9D9')
+                .style('stroke','#D9D9D9');
+        });
+
+}
+</script>
