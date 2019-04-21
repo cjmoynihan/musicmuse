@@ -5,4 +5,30 @@
     margin-bottom: 25px;
     margin-top: 100px;
     float: right;
-		}
+}
+
+.sos li{
+
+   list-style: none;
+
+   height: 50px;
+
+   line-height: 50px;
+
+   border-bottom: 1px dashed gray;
+
+   text-indent: 19px;
+
+   font-size: 15px;
+
+}
+
+.panel-body {
+	padding-bottom: 0px;padding-top: 0px;
+}
+
+#bnIncluster {
+  float: right;
+  margin-right: 10px;
+  margin-top: 10px;
+}

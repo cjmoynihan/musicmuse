@@ -9,7 +9,9 @@
   <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
   <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
 </head>
-<body>
+<body style="background-color: #a55c1b;
+background-image: linear-gradient(315deg,#000000 0%, #a55c1b 74%); width: 100%;
+">
 <nav class="navbar navbar-inverse" role="navigation">
   <div class="container-fluid"> 
   <div class="navbar-header">
@@ -19,25 +21,28 @@
     <div class="form-group">
       <input type="text" class="form-control" placeholder="music title" id="songSearch">
     </div>
-    <button type="button" class="btn btn-default" onclick="searchMusic()">Search</button>
+    <button type="button" class="btn btn-default" onclick="searchButton()">Search</button>
   </form>
   </div>
 </nav>
 
 <div class="root" id="vislization" >
 
-    <svg width="1000" height="1000" style="margin-left:100px; margin-right:0px;margin-top: -80px; float: left;"></svg>
+    <svg id = "rootRR" width="1000" height="1000" style="margin-left:100px; margin-right:0px;margin-top: -80px; float: left;"></svg>
 </div>
 
-<div class="panel panel-success" id="clusterpanel" style="display: none;">
+
+<div width= 100 hight=100 class="panel panel-warning" id="clusterpanel" style="display: none; overflow: scroll; background-color:#FFEFD5;">
   <div class="panel-heading">
     <h3 class="panel-title">Songs in the cluster</h3>
     
   </div>
-  <ul id="SongList">
   
-  </ul>
-  <div class="panel-body">
+  
+  <div class="abc" style="background-color: #FFEFD5;">
+    <ul class = "sos" id="SongList" style="padding-left: 0px; padding-top: 0px; padding-left: 0px;">  
+    </ul>
+
     
   </div>
 </div>
@@ -47,53 +52,116 @@
 
 
 <script>
-var blues = d3.scaleOrdinal(d3.schemeBlues[9]);
-
-function searchMusic(){
-  document.getElementById("clusterpanel").style.display="none";
-  let svg = d3.select("svg");
-    let margin = {
+var cd;
+let svg = d3.select("svg");
+let margin = {
         left: 100,
         top: 100,
         right: 100,
         bottom: 100
     };
 
-    let w = +svg.attr('width') - margin.left - margin.right;
-    let h = +svg.attr('height') - margin.top - margin.bottom;
+let w = +svg.attr('width') - margin.left - margin.right;
+let h = +svg.attr('height') - margin.top - margin.bottom;
 
-    let rootG = svg.append('g').attr('transform',`translate(${+svg.attr("width")/2}, ${+svg.attr("height")/2})`);
-    const r = h/2;
+var gradient = svg.append("svg:defs")
+    .append("svg:linearGradient")
+    .attr("id", "gradient")
+    .attr("x1", "0%")
+    .attr("y1", "0%")
+    .attr("x2", "100%")
+    .attr("y2", "100%")
+    .attr("spreadMethod", "pad");
 
-    /*rootG.append('circle')
+    gradient.append("svg:stop")
+    .attr("offset", "0%")
+    .attr("stop-color", "#ffffff")
+    .attr("stop-opacity", 1);
+
+    gradient.append("svg:stop")
+    .attr("offset", "30%")
+    .attr("stop-color", "#000000")
+    .attr("stop-opacity", 1);
+
+    
+
+let rootG = svg.append('g').attr('transform',`translate(${+svg.attr("width")/2}, ${+svg.attr("height")/2})`);
+const r = h/2;
+
+rootG.append('circle')
         .attr('r',r)
-        .style('fill', 'none')
-        .style('stroke','#D9D9D9')
-        .style("stroke-dasharray", ("10,3"));
-    */
-    rootG.append('circle')
+        .style('fill', 'url(#gradient)')
+        .style('stroke','black')
+        .style('stroke-width',5)
+        //.style("stroke-dasharray", ("10,3"));
+        .style("stroke")
+
+rootG.append('circle')
         .attr('r',r*0.25)
+        .style('fill', '#7F0000')
+        //.style('stroke','#D9D9D9')
+        //.style("stroke-dasharray", ("20,1"));
+        .style('stroke','black')
+        .style('stroke-width',5)
+        //.style("stroke-dasharray", ("10,3"));
+        .style("stroke");
+    for (var i =  99; i >= 0; i--) {
+      rootG.append('circle')
+        .attr('r',r*(i/100))
         .style('fill', 'none')
-        .style('stroke','#D9D9D9')
-        .style("stroke-dasharray", ("10,3"));
+        .style('stroke','black');
+        //.style("stroke-dasharray", ("1,3"));
+      
+    }
 
     rootG.append('circle')
         .attr('r',r*0.5)
         .style('fill', 'none')
         .style('stroke','#D9D9D9')
-        .style("stroke-dasharray", ("10,3"));
+        .style("stroke-dasharray", ("1,3"));
 
     rootG.append('circle')
         .attr('r',r*0.75)
         .style('fill', 'none')
         .style('stroke','#D9D9D9')
-        .style("stroke-dasharray", ("10,3"));
+        .style("stroke-dasharray", ("1,3"));
+    rootG.append("circle")
+                .attr('r',10)
+                .style('fill','#D9D9D9')
+                .style('stroke','#D9D9D9');
+
+var blues = d3.scaleOrdinal(d3.schemeReds[9]);
+function searchButton(){
+  //var l = document.getElementById("rootRR").childNodes;
+  //console.info(l);
+  typedSong = document.getElementById("songSearch").value;
+
+  //var searchSong = 
+  generateVis(typedSong)  
+}
+function generateVis(songname){
+  document.getElementById("clusterpanel").style.display="none";
+  
+  if (cd == null) {
+    //console.info("aaaa")
+  }
+  else
+    d3.select("svg").selectAll(".recc").remove();
+    //console.info(cd)
 
 
+    //console.info(songname.toString());
+    //console.info(typeof(songname));
+    
+    console.info(songname)
+    dddd = JSON.stringify(songname);
+    console.info(dddd);
 
-    d3.json('song.json')
+    jsonFile = String(songname) + ".json";
+    console.info(jsonFile); 
+    d3.json(jsonFile)
         .then(data=>{
-            console.log(data);
+            //console.log(data);
             const maxR = 50;
 
             const perAngel = 2*Math.PI / data.length;
@@ -107,11 +175,11 @@ function searchMusic(){
                 .domain([0,maxSL])
                 .range([0,maxR]);
 
-            const scaleC = function(idx){
+            /*const scaleC = function(idx){
                 const color = d3.interpolateRainbow;
                 const scale = d3.scaleLinear().domain([0,data.length]).range([0,1]);
                 return color(scale(idx));
-            };
+            };*/
 
             data.forEach((d,i)=>{
                 const y = scale(d.centerDistance) * Math.sin(i * perAngel);
@@ -119,20 +187,35 @@ function searchMusic(){
 
                 const yl = r * Math.sin(i * perAngel);
                 const xl = r * Math.cos(i * perAngel);
-                rootG.append('line')
+                /*rootG.append('line')
                     .attr('x1', 0)
                     .attr('y1', 0)
                     .attr('x2', xl)
                     .attr('y2', yl)
                     .style('stroke', '#6495ED')
-                    .style('stroke-width',2);
+                    .style('stroke-width',2);*/
 
-                var cd = rootG.append('circle')
+                cd = rootG.append('circle')
+                    .attr('class', "recc")
                     .attr('cx', x)
                     .attr('cy', y)
                     .attr('r',scaleR(d.songs.length))
                     .style('fill',blues(i))
                     .style('stroke','#D9D9D9')
+
+
+                    cd.on("mouseover",function(){
+                      d3.select(this).style('stroke','blue')
+                      d3.select(this).style('stroke-width',5)
+                      //d3.select(this).style('fill','orange')
+                    });
+
+                    cd.on("mouseout",function(){
+                      d3.select(this).style('stroke','none')
+                      
+                      //d3.select(this).style('fill',blues(i))
+                      
+                    });
 
                     cd.on("click",function(){
                       document.getElementById("clusterpanel").style.display="";
@@ -141,7 +224,7 @@ function searchMusic(){
                       for(var i = s_l_children.length - 1; i >= 0; i--) { 
 
                       
-                        console.info(i) 
+                        //console.info(i) 
                         s_l.removeChild(s_l_children[i]); 
                         }
 
@@ -150,7 +233,28 @@ function searchMusic(){
                         var s = document.createElement("LI");
                         var s_n = document.createTextNode(d.songs[i]);
 
+                        //var tSong = String(d.songs[i]);
+                        s.value = i;
+                        
+                        var b_n = document.createElement("button");
+
+                        b_n.id = ("bnIncluster");
+                        b_n.className = "btn btn-warning";
+                        b_n.innerHTML = "Search";
+                        var sname = d.songs[i];
+                        //b_n.onclick = generateVis(sname);
+
+                        b_n.onclick = function() {
+                          console.info(this.previousSibling.nodeValue);
+
+                          //var songInCluster = (this.previousSibling.innerHTML);
+                          //console.info(songInCluster);
+                          //generateVis(String(this.previousSibling));
+                          generateVis(this.previousSibling.nodeValue);
+                        }
+
                         s.appendChild(s_n);
+                        s.appendChild(b_n);
                         document.getElementById("SongList").appendChild(s);
                       }
 
@@ -158,11 +262,22 @@ function searchMusic(){
                     });
             });
 
-            rootG.append("circle")
+            /*rootG.append("circle")
                 .attr('r',10)
                 .style('fill','#D9D9D9')
-                .style('stroke','#D9D9D9');
+                .style('stroke','#D9D9D9');*/
         });
 
 }
+
+function JsonToString(o) {    
+    var arr = []; 
+    var fmt = function(s) { 
+        if (typeof s == 'object' && s != null) return JsonToStr(s); 
+        return /^(string|number)$/.test(typeof s) ? "'" + s + "'" : s; 
+    } 
+    for (var i in o) 
+         arr.push("'" + i + "':" + fmt(o[i])); 
+    return '{' + arr.join(',') + '}'; 
+} 
 </script>
