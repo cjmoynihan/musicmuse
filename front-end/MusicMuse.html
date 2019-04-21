@@ -197,12 +197,18 @@ function generateVis(songname){
 
                 cd = rootG.append('circle')
                     .attr('class', "recc")
-                    .attr('cx', x)
-                    .attr('cy', y)
+                    .attr('cx', 0)
+                    .attr('cy', 0)
                     .attr('r',scaleR(d.songs.length))
                     .style('fill',blues(i))
                     .style('stroke','#D9D9D9')
 
+                    cd
+                    .transition()
+                    .duration(1600)
+                    .attr("cy", y)
+                    .attr("cx", x)
+                    
 
                     cd.on("mouseover",function(){
                       d3.select(this).style('stroke','blue')
