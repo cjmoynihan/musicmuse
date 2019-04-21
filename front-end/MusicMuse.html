@@ -199,7 +199,7 @@ function generateVis(songname){
                     .attr('class', "recc")
                     .attr('cx', 0)
                     .attr('cy', 0)
-                    .attr('r',scaleR(d.songs.length))
+                    .attr('r',0)
                     .style('fill',blues(i))
                     .style('stroke','#D9D9D9')
 
@@ -208,6 +208,7 @@ function generateVis(songname){
                     .duration(1600)
                     .attr("cy", y)
                     .attr("cx", x)
+                    .attr('r',scaleR(d.songs.length))
                     
 
                     cd.on("mouseover",function(){
