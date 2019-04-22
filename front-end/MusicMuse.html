@@ -88,7 +88,11 @@ var gradient = svg.append("svg:defs")
 let rootG = svg.append('g').attr('transform',`translate(${+svg.attr("width")/2}, ${+svg.attr("height")/2})`);
 const r = h/2;
 
+
 rootG.append('circle')
+        //.transition().duration(8000)
+        //.attr("transform", "rotate(360)")
+        .attr('id', 'cc1')
         .attr('r',r)
         .style('fill', 'url(#gradient)')
         .style('stroke','black')
@@ -96,9 +100,21 @@ rootG.append('circle')
         //.style("stroke-dasharray", ("10,3"));
         .style("stroke")
 
+//var dddd = d3.select("#aaadfdf");
+//dddd.each(cycle);
+
+function cycle() {
+  d3.select(this).transition()
+      .duration(20000)
+      .ease(d3.easeLinear)
+      .attrTween("transform", function() { return d3.interpolateString("rotate(0)", "rotate(360)"); })
+      .on("end", cycle);
+}
+
+
 rootG.append('circle')
         .attr('r',r*0.25)
-        .style('fill', '#7F0000')
+        .style('fill', 'red')
         //.style('stroke','#D9D9D9')
         //.style("stroke-dasharray", ("20,1"));
         .style('stroke','black')
@@ -115,20 +131,31 @@ rootG.append('circle')
     }
 
     rootG.append('circle')
+        .attr('id','cc2')
         .attr('r',r*0.5)
         .style('fill', 'none')
         .style('stroke','#D9D9D9')
-        .style("stroke-dasharray", ("1,3"));
+        .style('stroke-width',5)
+        .style("stroke-dasharray", ("5,10"));
 
     rootG.append('circle')
+        .attr('id','cc3')
         .attr('r',r*0.75)
         .style('fill', 'none')
         .style('stroke','#D9D9D9')
-        .style("stroke-dasharray", ("1,3"));
+        .style('stroke-width',2)
+        .style("stroke-dasharray", ("15,10"));
     rootG.append("circle")
                 .attr('r',10)
                 .style('fill','#D9D9D9')
                 .style('stroke','#D9D9D9');
+
+var cd2 = d3.select("#cc2");
+cd2.each(cycle);
+
+var cd3 = d3.select("#cc3");
+cd3.each(cycle);
+
 
 var blues = d3.scaleOrdinal(d3.schemeReds[9]);
 function searchButton(){
@@ -276,15 +303,4 @@ function generateVis(songname){
         });
 
 }
-
-function JsonToString(o) {    
-    var arr = []; 
-    var fmt = function(s) { 
-        if (typeof s == 'object' && s != null) return JsonToStr(s); 
-        return /^(string|number)$/.test(typeof s) ? "'" + s + "'" : s; 
-    } 
-    for (var i in o) 
-         arr.push("'" + i + "':" + fmt(o[i])); 
-    return '{' + arr.join(',') + '}'; 
-} 
 </script>
