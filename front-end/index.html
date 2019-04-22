@@ -158,6 +158,20 @@ cd3.each(cycle);
 
 
 var blues = d3.scaleOrdinal(d3.schemeReds[9]);
+
+var textbox = document.getElementById('songSearch');
+textbox.addEventListener('keydown', (event) => {
+  if (event.keyCode === 13) {
+    event.preventDefault();
+  }
+});
+textbox.addEventListener('keyup', (event) => {
+  if (event.keyCode === 13) {
+    event.preventDefault();
+    searchButton();
+  }
+});
+
 function searchButton(){
   //var l = document.getElementById("rootRR").childNodes;
   //console.info(l);
