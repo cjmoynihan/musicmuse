@@ -32,3 +32,9 @@
   margin-right: 10px;
   margin-top: 10px;
 }
+
+.recc {
+  transition: stroke 190ms, stroke-width 170ms;
+  transition-timing-function: ease-out;
+  paint-order: stroke fill
+}
