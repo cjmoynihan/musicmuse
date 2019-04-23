@@ -35,7 +35,7 @@
     
     </div>
 
-    <div style="background-color: #FFEFD5; height: 800px" >
+    <div style="background-color: #FFEFD5; height: 500px" >
       
 
     
@@ -46,9 +46,13 @@
 
 
 <div class="middle">
+  <div>
+    <h1 id = "ttsong" class="ttcc" style="text-align: center;"><font face="verdana"><center></center></font></h1>
+
+  </div>
 
   <div class="root" id="vislization" >
-    <svg id = "rootRR" width="800" height="800" style="margin-left:-50px; margin-right:0px;margin-top: -80px; float: left;"></svg>
+    <svg id = "rootRR" width="800" height="800" style="margin-left:0px; margin-right:0px;margin-top: -120px; float: left;"></svg>
   </div>
 
 </div>
@@ -186,6 +190,8 @@ function searchButton(){
   generateVis(typedSong)  
 }
 function generateVis(songname){
+  document.getElementById("ttsong").innerHTML = "Taste of " + songname;
+
 
   
 
@@ -207,13 +213,17 @@ function generateVis(songname){
     //console.info(typeof(songname));
 
 
+    //srootG.append('rect')
+
 
     cd1 = rootG.append('circle')
         .attr('id','cc1')
         .attr('class','cr1')
         //.attr('r',r*0.75)
         .attr('r',0)
+        .attr("fill-opacity","0.9")
         .style('fill', '#D3D3D3')
+
         //.style('stroke','#D9D9D9')
         //.style("stroke-dasharray", ("20,1"));
         .style('stroke','#D9D9D9')
@@ -234,6 +244,7 @@ function generateVis(songname){
         .attr('class','cr1')
         //.attr('r',r*0.5)
         .attr('r',0)
+        .attr("fill-opacity","0.9")
         .style('fill', '#A9A9A9')
         .style('stroke','#D9D9D9')
         //.style('stroke-width',5)
@@ -244,6 +255,7 @@ function generateVis(songname){
         .attr('id','cc3')
         //.attr('r',r*0.25)
         .attr('r',0)
+        .attr("fill-opacity","0.9")
         .style('fill', 'grey')
         .style('stroke','#D9D9D9')
 
@@ -281,6 +293,12 @@ function generateVis(songname){
             const maxR = 50;
 
             const perAngel = 2*Math.PI / data.length;
+
+
+
+            //console.
+            console.info(perAngel);
+
             const maxDis = d3.max(data, d=>d.centerDistance);
             const maxSL = d3.max(data, d=>d.songs.length);
             const scale = d3.scaleLinear()
@@ -298,13 +316,24 @@ function generateVis(songname){
                 const scale = d3.scaleLinear().domain([0,data.length]).range([0,1]);
                 return color(scale(idx));
             };*/
+            rootG.append("svg:image")
+            .attr('class',"cimg")
+            .attr('x', -9)
+            .attr('y', -12)
+            .attr('width', 20)
+            .attr('height', 24)
+            .attr("xlink:href", "centerimg.png")
 
             data.forEach((d,i)=>{
+                //const y = scale(d.centerDistance) * Math.sin(d.angle);
+                //const x = scale(d.centerDistance) * Math.cos(d.angle);
+
+
                 const y = scale(d.centerDistance) * Math.sin(i * perAngel);
                 const x = scale(d.centerDistance) * Math.cos(i * perAngel);
 
-                const yl = r * Math.sin(i * perAngel);
-                const xl = r * Math.cos(i * perAngel);
+                //const yl = r * Math.sin(i * perAngel);
+                //const xl = r * Math.cos(i * perAngel);
                 /*rootG.append('line')
                     .attr('x1', 0)
                     .attr('y1', 0)
@@ -327,6 +356,19 @@ function generateVis(songname){
                     .attr("cy", y)
                     .attr("cx", x)
                     .attr('r',scaleR(d.songs.length))
+
+                    cdt = rootG.append('text')
+                      .attr("x",x)
+                      .attr("y",y-scaleR(d.songs.length) - 5)
+                      .style("opacity", 0)
+                      .text("")
+
+                    cdt
+                    .transition()
+                    .delay(500)
+                    .style("opacity", 1)
+                    .duration(2000)
+                    .text("Cluster " + i)
                     
 
                     cd.on("mouseover",function(){
@@ -404,13 +446,7 @@ function generateVis(songname){
                       
                     });
             });
-            rootG.append("svg:image")
-            .attr('class',"cimg")
-            .attr('x', -9)
-            .attr('y', -12)
-            .attr('width', 20)
-            .attr('height', 24)
-            .attr("xlink:href", "centerimg.png")
+            
 
             /*rootG.append("circle")
                 .attr('r',10)
