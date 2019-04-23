@@ -52,7 +52,7 @@
   </div>
 
   <div class="root" id="vislization" >
-    <svg id = "rootRR" width="800" height="800" style="margin-left:0px; margin-right:0px;margin-top: -120px; float: left;"></svg>
+    <svg id = "rootRR" width="900" height="800" style="margin-left:0px; margin-right:0px;margin-top: -120px; float: left;"></svg>
   </div>
 
 </div>
@@ -324,6 +324,24 @@ function generateVis(songname){
             .attr('width', 20)
             .attr('height', 24)
             .attr("xlink:href", "centerimg.png")
+
+
+            /*rootG.append("rect")
+            .attr('width', 150)
+            .attr('height',150)
+            .attr('x',250)
+            .attr('y',100)
+            .style('stroke','#D9D9D9')
+            .style('fill',"none")*/
+
+
+            rootG.append("rect").attr("x",240).attr("y",160).attr("width", 50).attr("height",20).style("fill", "grey")
+            rootG.append("rect").attr("x",240).attr("y",190).attr("width", 50).attr("height",20).style("fill", "#A9A9A9")
+            rootG.append("rect").attr("x",240).attr("y",220).attr("width", 50).attr("height",20).style("fill", "#D9D9D9")
+            rootG.append("text").attr("x", 305).attr("y", 170).text("0 ~ 25%").style("font-size", "17px").attr("alignment-baseline","middle")
+            rootG.append("text").attr("x", 305).attr("y", 200).text("25% ~ 50%").style("font-size", "17px").attr("alignment-baseline","middle")
+            rootG.append("text").attr("x", 305).attr("y", 230).text("50% ~ 75%").style("font-size", "17px").attr("alignment-baseline","middle")
+
 
             data.forEach((d,i)=>{
                 //const y = scale(d.centerDistance) * Math.sin(d.angle);
