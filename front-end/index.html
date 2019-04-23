@@ -206,6 +206,7 @@ function generateVis(songname){
   else
     d3.select("svg").selectAll(".recc").remove();
     d3.select("svg").selectAll(".cr1").remove();
+    d3.select("svg").selectAll(".trecc").remove();
     //console.info(cd)
 
 
@@ -358,8 +359,9 @@ function generateVis(songname){
                     .attr('r',scaleR(d.songs.length))
 
                     cdt = rootG.append('text')
-                      .attr("x",x)
-                      .attr("y",y-scaleR(d.songs.length) - 5)
+                      .attr('class',"trecc")
+                      .attr("x",x - 20)
+                      .attr("y",y-scaleR(d.songs.length) - 9)
                       .style("opacity", 0)
                       .text("")
 
@@ -368,7 +370,7 @@ function generateVis(songname){
                     .delay(500)
                     .style("opacity", 1)
                     .duration(2000)
-                    .text("Cluster " + i)
+                    .text("Cluster " + (i+1))
                     
 
                     cd.on("mouseover",function(){
