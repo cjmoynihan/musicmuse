@@ -47,7 +47,7 @@
 
 <div class="middle">
   <div>
-    <h1 id = "ttsong" class="ttcc" style="text-align: center;"><font face="verdana"><center></center></font></h1>
+    <h1 id = "ttsong" class="ttcc" style="text-align: center; font-family: Jazz LET, fantasy"><font face="verdana"><center></center></font></h1>
 
   </div>
 
@@ -361,8 +361,10 @@ function generateVis(songname){
                     cdt = rootG.append('text')
                       .attr('class',"trecc")
                       .attr("x",x - 20)
+                      .attr("font-family", "American Typewriter, serif")
                       .attr("y",y-scaleR(d.songs.length) - 9)
                       .style("opacity", 0)
+
                       .text("")
 
                     cdt
