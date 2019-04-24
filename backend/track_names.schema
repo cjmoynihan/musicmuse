@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS track_song(
+	track_id TEXT PRIMARY KEY,
+	title TEXT NOT NULL,
+	artist TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tags(
+	track_id TEXT NOT NULL,
+	tag TEXT NOT NULL,
+	rating INT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS reverse_index ON track_song (title, artist, track_id);
+CREATE INDEX IF NOT EXISTS tag_index ON tags (track_id);
