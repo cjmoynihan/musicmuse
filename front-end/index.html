@@ -21,7 +21,7 @@
 </nav>
 
 <div class="left">
-  <div width= 100 hight=100 class="panel panel-warning" id="songinfopanel" style="margin-top: 30px; overflow: scroll; background-color:#FFEFD5;">
+  <div class="panel panel-warning" id="songinfopanel" style="margin-top: 30px; overflow-y: auto; background-color:#FFEFD5;">
     <div class="panel-heading">
       <h3 class="panel-title">
         <div class="form-group">
@@ -35,8 +35,7 @@
     
     </div>
 
-    <div style="background-color: #FFEFD5; height: 500px" >
-      
+    <div id="left-panel" style="background-color: #FFEFD5; height: 500px" >
 
     
     </div>
@@ -59,7 +58,7 @@
 
 
 <div class="right">
-  <div width= 100 hight=100 class="panel panel-warning" id="clusterpanel" style="display: none; margin-top: 30px; overflow: scroll; background-color:#FFEFD5;">
+  <div class="panel panel-warning" id="clusterpanel" style="display: none; margin-top: 30px; overflow-y: auto; background-color:#FFEFD5;">
   <div class="panel-heading">
     <h3 class="panel-title">Songs in the cluster</h3>
     
@@ -88,6 +87,28 @@
 
 
 <script>
+
+function getHashParams() {
+  // Taken from: https://stackoverflow.com/questions/4197591/parsing-url-hash-fragment-identifier-with-javascript?noredirect=1&lq=1
+  var hashParams = {};
+  var e,
+      a = /\+/g,  // Regex for replacing addition symbol with a space
+      r = /([^&;=]+)=?([^&;]*)/g,
+      d = function (s) { return decodeURIComponent(s.replace(a, " ")); },
+      q = window.location.hash.substring(1);
+   while (e = r.exec(q))
+    hashParams[d(e[1])] = d(e[2]);
+   return hashParams;
+}
+ var hashParams = undefined;
+if (window.location.hash) {
+  hashParams = getHashParams();
+  // window.location.hash = '';
+} else {
+  let redirect_uri = `http://localhost:8000/`
+  window.location.replace(`https://accounts.spotify.com/authorize?client_id=42228dabc22e4e32979f31c097bf9b16&response_type=token&redirect_uri=${encodeURI(redirect_uri)}`);
+}
+
 var cd;
 let svg = d3.select("svg");
 let margin = {
@@ -181,10 +202,10 @@ textbox.addEventListener('keyup', (event) => {
   }
 });
 
-function searchButton(){
+async function searchButton(){
   //var l = document.getElementById("rootRR").childNodes;
   //console.info(l);
-  typedSong = document.getElementById("songSearch").value;
+  let typedSong = document.getElementById("songSearch").value;
 
   //var searchSong = 
   generateVis(typedSong)  
@@ -413,8 +434,8 @@ function generateVis(songname){
                     });
                     
                     let k = i;
-                    cd.on("click",function(){
-                      global.selectedIndex = k;
+                    cd.on("click", async function(){
+                      global.selectedIndex = i;
 
                       let reccs = document.getElementsByClassName("recc");
                       for (let i = 0; i < reccs.length; i++) {
@@ -428,7 +449,7 @@ function generateVis(songname){
                       document.getElementById("clusterpanel").style.display="";
                       var s_l = document.getElementById("SongList")
                       var s_l_children = s_l.childNodes;
-                      for(var i = s_l_children.length - 1; i >= 0; i--) { 
+                      for(let i = s_l_children.length - 1; i >= 0; i--) { 
 
                       
                         //console.info(i) 
@@ -436,33 +457,62 @@ function generateVis(songname){
                         }
 
 
-                      for (var i = 0; i<d.songs.length;i++) {
-                        var s = document.createElement("LI");
-                        var s_n = document.createTextNode(d.songs[i]);
+                      // for (var i = 0; i<d.songs.length;i++) {
+                      //   var s = document.createElement("LI");
+                      //   var s_n = document.createTextNode(d.songs[i]);
 
-                        //var tSong = String(d.songs[i]);
-                        s.value = i;
+                      //   //var tSong = String(d.songs[i]);
+                      //   s.value = i;
                         
-                        var b_n = document.createElement("button");
+                      //   var b_n = document.createElement("button");
 
-                        b_n.id = ("bnIncluster");
-                        b_n.className = "btn btn-warning";
-                        b_n.innerHTML = "Search";
-                        var sname = d.songs[i];
-                        //b_n.onclick = generateVis(sname);
+                      //   b_n.id = ("bnIncluster");
+                      //   b_n.className = "btn btn-warning";
+                      //   b_n.innerHTML = "Search";
+                      //   var sname = d.songs[i];
+                      //   //b_n.onclick = generateVis(sname);
 
-                        b_n.onclick = function() {
-                          console.info(this.previousSibling.nodeValue);
+                      //   b_n.onclick = function() {
+                      //     console.info(this.previousSibling.nodeValue);
 
-                          //var songInCluster = (this.previousSibling.innerHTML);
-                          //console.info(songInCluster);
-                          //generateVis(String(this.previousSibling));
-                          generateVis(this.previousSibling.nodeValue);
+                      //     //var songInCluster = (this.previousSibling.innerHTML);
+                      //     //console.info(songInCluster);
+                      //     //generateVis(String(this.previousSibling));
+                      //     generateVis(this.previousSibling.nodeValue);
+                      //   }
+
+                      //   s.appendChild(s_n);
+                      //   s.appendChild(b_n);
+                      //   document.getElementById("SongList").appendChild(s);
+                      // }
+
+                      let songlistElement = document.getElementById('SongList');
+                      for (let i = 0; i < d.songs.length; i++) {
+                        let query = `${d.songs[i]} ${d.artists[i]}`;
+                        let resp = await fetch(`https://api.spotify.com/v1/search?q=${encodeURI(query)}&type=track&limit=1&`, {
+                          headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${hashParams.access_token}`
+                          }
+                        }).then(response => response.json());
+                        
+                        if (resp.tracks.items.length === 0) {
+                          console.log('Could not find song: ', d.songs[i]);
+                          continue;
                         }
 
-                        s.appendChild(s_n);
-                        s.appendChild(b_n);
-                        document.getElementById("SongList").appendChild(s);
+                        let trackId = resp.tracks.items[0].id;
+                        let songUrl = `https://open.spotify.com/embed/track/${trackId}`;
+
+                        let iframe = document.createElement('iframe');
+                        iframe.setAttribute('width', '250');
+                        iframe.setAttribute('height', '80');
+                        iframe.setAttribute('frameborder', '0');
+                        iframe.setAttribute('allowtransparency', 'true');
+                        iframe.setAttribute('allow', 'encrypted-media');
+                        iframe.setAttribute('src', songUrl);
+                        songlistElement.appendChild(iframe);
                       }
 
                       
