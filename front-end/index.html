@@ -202,14 +202,43 @@ textbox.addEventListener('keyup', (event) => {
   }
 });
 
-async function searchButton(){
+function searchButton(){
   //var l = document.getElementById("rootRR").childNodes;
   //console.info(l);
   let typedSong = document.getElementById("songSearch").value;
-
+  loadSongPlayWidget(typedSong);
   //var searchSong = 
-  generateVis(typedSong)  
+  generateVis(typedSong)
 }
+
+async function loadSongPlayWidget(songName) {
+  let resp = await fetch(`https://api.spotify.com/v1/search?q=${encodeURI(songName)}&type=track&limit=1&`, {
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${hashParams.access_token}`
+    }
+  }).then(response => response.json());
+  
+  if (resp.tracks.items.length === 0) {
+    console.log('Could not find song: ', d.songs[i]);
+    return;
+  }
+
+  let trackId = resp.tracks.items[0].id;
+  let songUrl = `https://open.spotify.com/embed/track/${trackId}`;
+
+  let iframe = document.createElement('iframe');
+  iframe.setAttribute('width', '250');
+  iframe.setAttribute('height', '300');
+  iframe.setAttribute('frameborder', '0');
+  iframe.setAttribute('allowtransparency', 'true');
+  iframe.setAttribute('allow', 'encrypted-media');
+  iframe.setAttribute('src', songUrl);
+
+  document.getElementById('left-panel').appendChild(iframe);
+}
+
 function generateVis(songname){
   document.getElementById("ttsong").innerHTML = "Taste of " + songname;
 
