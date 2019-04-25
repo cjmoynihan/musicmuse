@@ -148,17 +148,18 @@ def reach_out(track_ids, track_count=200, num_clusters=5):
     print("Finished clustering")
     # Possibly add method for separate analysis of individual clusters
     return [c for c in clusters]
-if __name__ == '__main__':
-    track_id = "TRAWOYD128F4215DDD"
-    top_size = 20
-    clustering = n_clustering(track_id, 5)
+
+
+def create_json(track_id, num_clusters = 5, top_size = 20):
+    clustering = n_clustering(track_id, num_clusters)
     title, artist = TrackReader.get_song(track_id)[0]
     json_obj = list()
-    with open(title + '.txt', 'w') as f:
+    with open('jsons/' + title + '.txt', 'w') as f:
         for (i, (cluster, distance)) in enumerate(clustering):
             songs, artists = zip(*((TrackReader.get_song(tid)[0] for tid in cluster)))
             songs, artists = list(songs)[:top_size], list(artists)[:top_size]
             center_distance = distance
+            # For now just make all of the center_distances
             angle = math.pi * 2 * i/len(clustering)
             print(angle)
             json_obj.append({
@@ -169,4 +170,31 @@ if __name__ == '__main__':
             })
         print('\n'.join(str(len(item["songs"])) for item in json_obj))
         json.dump(json_obj, f)
+
+
+
+
+if __name__ == '__main__':
+    pass
+    # track_id = "TRAWOYD128F4215DDD"
+    # top_size = 20
+    # clustering = n_clustering(track_id, 5)
+    # title, artist = TrackReader.get_song(track_id)[0]
+    # json_obj = list()
+    # with open(title + '.txt', 'w') as f:
+    #     for (i, (cluster, distance)) in enumerate(clustering):
+    #         songs, artists = zip(*((TrackReader.get_song(tid)[0] for tid in cluster)))
+    #         songs, artists = list(songs)[:top_size], list(artists)[:top_size]
+    #         center_distance = distance
+    #         angle = math.pi * 2 * i/len(clustering)
+    #         print(angle)
+    #         json_obj.append({
+    #             "songs": songs,
+    #             "artists": artists,
+    #             "centerDistance": center_distance,
+    #             "angle": angle
+    #         })
+    #     print('\n'.join(str(len(item["songs"])) for item in json_obj))
+    #     json.dump(json_obj, f)
+
 
