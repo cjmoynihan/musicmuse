@@ -59,7 +59,7 @@
 <div class="right">
   <div class="panel" id="clusterpanel" style="display: none; margin-top: 30px; overflow-y: auto; background-color:#2220; height: 572px;">
   <div class="panel-heading" style="background-color: #222;">
-    <h3 class="panel-title" color="white;">Songs in the cluster</h3>
+    <h3 class="panel-titleee" style="color: white;">Songs in the cluster</h3>
     
   </div>
   
@@ -221,7 +221,7 @@ async function getSongPlayWidget(songName) {
   }).then(response => response.json());
   
   if (resp.tracks.items.length === 0) {
-    console.log('Could not find song: ', d.songs[i]);
+    console.log('Could not find song: ', songName);
     return;
   }
 
@@ -341,8 +341,10 @@ function generateVis(songname){
     console.info(dddd);
 
     jsonFile = String(songname) + ".json";
-    console.info(jsonFile); 
-    d3.json(jsonFile)
+    Jpath = "/songjson/";
+    Jfile = Jpath + jsonFile;
+    console.info(Jfile); 
+    d3.json(Jfile)
         .then(data=>{
 
 
@@ -352,21 +354,21 @@ function generateVis(songname){
             <table id="stat-table" class="table table-condensed">
               <tbody>
                 <tr>
-                  <td>Total Songs</td>
-                  <td>${data.map((c) => c.songs.length).reduce((a, v) => a + v, 0)}</td>
+                  <td style="color: white;">Total Songs</td>
+                  <td style="color: white;">${data.map((c) => c.songs.length).reduce((a, v) => a + v, 0)}</td>
                 </tr>
                 <tr>
-                  <td>Top Cluster Similarity</td>
-                  <td>${1/data.reduce((a, c) => c.centerDistance < a ? c.centerDistance : a, Infinity).toFixed(3)}</td>
+                  <td style="color: white;">Top Cluster Similarity</td>
+                  <td style="color: white;">${1/data.reduce((a, c) => c.centerDistance < a ? c.centerDistance : a, Infinity).toFixed(3)}</td>
                 </tr>
                 <tr>
-                  <td>Avg Cluster Similarity</td>
-                  <td>${1 / (data.reduce((a, c) => c.centerDistance + a, 0) / data.length).toFixed(3)}</td>
+                  <td style="color: white;">Avg Cluster Similarity</td>
+                  <td style="color: white;">${1 / (data.reduce((a, c) => c.centerDistance + a, 0) / data.length).toFixed(3)}</td>
                 </tr>
               </tbody>
             </table>
             `)
-            getSongPlayWidget(songname).then((widget) => {
+            getSongPlayWidget(songname.split('_').join(' ')).then((widget) => {
               leftPanel.appendChild(widget);
               leftPanel.appendChild(table);
             })
@@ -415,16 +417,17 @@ function generateVis(songname){
             .style('stroke','#D9D9D9')
             .style('fill',"none")*/
 
-
-            rootG.append("rect").attr("x",240).attr("y",160).attr("width", 50).attr("height",20).style("fill", "grey")
-            rootG.append("rect").attr("x",240).attr("y",190).attr("width", 50).attr("height",20).style("fill", "#A9A9A9")
+            rootG.append("text").attr("x",240).attr("y",165).text("% of Users like").style("font-size", "17px").attr("alignment-baseline","middle")
+            rootG.append("rect").attr("x",240).attr("y",180).attr("width", 50).attr("height",20).style("fill", "grey")
+            rootG.append("rect").attr("x",240).attr("y",200).attr("width", 50).attr("height",20).style("fill", "#A9A9A9")
             rootG.append("rect").attr("x",240).attr("y",220).attr("width", 50).attr("height",20).style("fill", "#D9D9D9")
-            rootG.append("text").attr("x", 305).attr("y", 170).text("0 ~ 25%").style("font-size", "17px").attr("alignment-baseline","middle")
-            rootG.append("text").attr("x", 305).attr("y", 200).text("25% ~ 50%").style("font-size", "17px").attr("alignment-baseline","middle")
-            rootG.append("text").attr("x", 305).attr("y", 230).text("50% ~ 75%").style("font-size", "17px").attr("alignment-baseline","middle")
+            rootG.append("text").attr("x", 300).attr("y", 190).text("0-25%").style("font-size", "15px").attr("alignment-baseline","middle")
+            rootG.append("text").attr("x", 300).attr("y", 210).text("25%-50%").style("font-size", "15px").attr("alignment-baseline","middle")
+            rootG.append("text").attr("x", 300).attr("y", 230).text("50%-75%").style("font-size", "15px").attr("alignment-baseline","middle")
 
 
             data.forEach((d,i)=>{
+                console.info(d.centerDistance);
                 const y = scale(d.centerDistance) * Math.sin(d.angle);
                 const x = scale(d.centerDistance) * Math.cos(d.angle);
 
@@ -570,7 +573,7 @@ function generateVis(songname){
                         }).then(response => response.json());
                         
                         if (resp.tracks.items.length === 0) {
-                          console.log('Could not find song: ', d.songs[i]);
+                          console.log('Could not find song: ', d.songs[i], 'Artist: ', d.artists[i]);
                           continue;
                         }
 
@@ -595,7 +598,8 @@ function generateVis(songname){
                         </button>`);
 
                         button.onclick = () => {
-                          generateVis(d.songs[i])
+                          //console(d.song[i])
+                          generateVis(d.songs[i] + "_" + d.artists[i])
                         };
                         parent.appendChild(button);
                         songlistElement.appendChild(parent);
