@@ -13,7 +13,7 @@
 <nav class="navbar navbar-inverse" role="navigation">
   <div class="container-fluid"> 
   <div class="navbar-header">
-    <a class="navbar-brand" href="#">Music Muse</a>
+    <a style="text-align: center; font-family: Apple Chancery, cursive; font-size: 20" class="navbar-brand" href="#">Music Muse</a>
   </div>
   
   </div>
@@ -48,7 +48,7 @@
   </div>
 
   <div class="root" id="vislization" >
-    <svg id = "rootRR" width="900" height="800" style="margin-left:0px; margin-right:0px;margin-top: -120px; float: left;"></svg>
+    <svg id = "rootRR" width="900" height="800" style="margin-left:-90px; margin-right:0px;margin-top: -120px; float: left;"></svg>
   </div>
 
 </div>
@@ -244,12 +244,6 @@ function generateVis(songname){
   }
   document.getElementById("ttsong").innerHTML = "Taste of " + songname;
 
-
-  
-
-
-
-
   let clusterpanel = document.getElementById("clusterpanel");
   
   clusterpanel.style.opacity="0"
@@ -429,12 +423,12 @@ function generateVis(songname){
 
 
             data.forEach((d,i)=>{
-                //const y = scale(d.centerDistance) * Math.sin(d.angle);
-                //const x = scale(d.centerDistance) * Math.cos(d.angle);
+                const y = scale(d.centerDistance) * Math.sin(d.angle);
+                const x = scale(d.centerDistance) * Math.cos(d.angle);
 
 
-                const y = scale(d.centerDistance) * Math.sin(i * perAngel);
-                const x = scale(d.centerDistance) * Math.cos(i * perAngel);
+                //const y = scale(d.centerDistance) * Math.sin(i * perAngel);
+                //const x = scale(d.centerDistance) * Math.cos(i * perAngel);
 
                 //const yl = r * Math.sin(i * perAngel);
                 //const xl = r * Math.cos(i * perAngel);
@@ -445,6 +439,9 @@ function generateVis(songname){
                     .attr('y2', yl)
                     .style('stroke', '#6495ED')
                     .style('stroke-width',2);*/
+
+                var node_text = "Cluster " + (i+1);
+                console.info(node_text);
 
                 cd = rootG.append('circle')
                     .attr('class', "recc")
@@ -463,11 +460,14 @@ function generateVis(songname){
 
                     cdt = rootG.append('text')
                       .attr('class',"trecc")
-                      .attr("x",x - 20)
+                      .attr("x", ((scale(d.centerDistance)+scaleR(d.songs.length)+10) * Math.cos(d.angle) + (Math.cos(d.angle)-1)/2 * node_text.length * 6.25))
+                      // .attr("x",Math.sin(Math.asin(x/d.centerDistance)*(centerDistance+20)))
                       .attr("font-family", "American Typewriter, serif")
-                      .attr("y",y-scaleR(d.songs.length) - 9)
-                      .style("opacity", 0)
-
+                      .attr("y", ((scale(d.centerDistance)+scaleR(d.songs.length)+10) * Math.sin(d.angle)))
+                      .attr("dominant-baseline", "central")
+                      // .attr("y",y-scaleR(d.songs.length) - 9)
+                      //.style("opacity", Math.cos(Math.asin(x/d.centerDistance)*(centerDistance+20)))
+                      .style("opacity",0)
                       .text("")
 
                     cdt
@@ -475,7 +475,7 @@ function generateVis(songname){
                     .delay(500)
                     .style("opacity", 1)
                     .duration(2000)
-                    .text("Cluster " + (i+1))
+                    .text(node_text)
                     
 
                     cd.on("mouseover",function(){
