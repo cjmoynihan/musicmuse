@@ -33,6 +33,8 @@
     </div>
 
     <div id="left-panel" style="background-color: #FFEFD5; height: 500px" >
+      <!-- <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
+      <p>loading</p>  WIP -->
     </div>
   </div>
 
@@ -207,7 +209,7 @@ function searchButton(){
   generateVis(typedSong)
 }
 
-async function loadSongPlayWidget(songName) {
+async function getSongPlayWidget(songName) {
   let resp = await fetch(`https://api.spotify.com/v1/search?q=${encodeURI(songName)}&type=track&limit=1&`, {
     headers: {
       'Accept': 'application/json',
@@ -232,15 +234,14 @@ async function loadSongPlayWidget(songName) {
   iframe.setAttribute('allowtransparency', 'true');
   iframe.setAttribute('allow', 'encrypted-media');
   iframe.setAttribute('src', songUrl);
+  return iframe;
+}
+
+function generateVis(songname){
   let leftPanel = document.getElementById('left-panel');
   while (leftPanel.firstChild) {
     leftPanel.removeChild(leftPanel.firstChild);
   }
-  leftPanel.appendChild(iframe);
-}
-
-function generateVis(songname){
-  loadSongPlayWidget(songname);
   document.getElementById("ttsong").innerHTML = "Taste of " + songname;
 
 
@@ -369,8 +370,10 @@ function generateVis(songname){
               </tbody>
             </table>
             `)
-
-            document.getElementById('left-panel').appendChild(table);
+            getSongPlayWidget(songname).then((widget) => {
+              leftPanel.appendChild(widget);
+              leftPanel.appendChild(table);
+            })
             // -----------------------------------
             //console.log(data);
             const maxR = 50;
