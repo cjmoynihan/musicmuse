@@ -9,8 +9,7 @@
   <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
   <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
 </head>
-<body style="
-">
+<body>
 <nav class="navbar navbar-inverse" role="navigation">
   <div class="container-fluid"> 
   <div class="navbar-header">
@@ -21,23 +20,19 @@
 </nav>
 
 <div class="left">
-  <div class="panel panel-warning" id="songinfopanel" style="margin-top: 30px; overflow-y: auto; background-color:#FFEFD5;">
+  <div class="panel" id="songinfopanel" style="margin-top: 30px; overflow-y: auto; background-color:#FFEFD5;">
     <div class="panel-heading">
-      <h3 class="panel-title">
-        <div class="form-group">
+        <div id="searchDiv" class="form-group">
 
-      <input type="text" id="songSearch" style="width: 150px; height: 35px;"><button style="width: 100px; margin-bottom: 6px; margin-left: 2px" type="button" class="btn btn-default" onclick="searchButton()">Search</button>
+      <input type="text" id="songSearch" style="width: 180px; height: 35px;">
+      <button type="button" class="btn btn-default" onclick="searchButton()">Search</button>
       
       
     </div>
-    
-      </h3>
-    
+      
     </div>
 
     <div id="left-panel" style="background-color: #FFEFD5; height: 500px" >
-
-    
     </div>
   </div>
 
@@ -58,7 +53,7 @@
 
 
 <div class="right">
-  <div class="panel panel-warning" id="clusterpanel" style="display: none; margin-top: 30px; overflow-y: auto; background-color:#FFEFD5;">
+  <div class="panel" id="clusterpanel" style="display: none; margin-top: 30px; overflow-y: auto; background-color:#FFEFD5;">
   <div class="panel-heading">
     <h3 class="panel-title">Songs in the cluster</h3>
     
@@ -66,22 +61,13 @@
   
   
   <div class="abc" style="background-color: #FFEFD5;">
-    <ul class = "sos" id="SongList" style="padding-left: 0px; padding-top: 0px; padding-left: 0px;">  
-    </ul>
+    <div class = "sos" id="SongList" style="padding-left: 0px; padding-top: 0px; padding-left: 0px;">  
+    </div>
 
     
   </div>
 </div>
-
-
-
 </div>
-
-
-
-
-
-
 </body>
 </html>
 
@@ -107,6 +93,17 @@ if (window.location.hash) {
 } else {
   let redirect_uri = `http://localhost:8000/`
   window.location.replace(`https://accounts.spotify.com/authorize?client_id=42228dabc22e4e32979f31c097bf9b16&response_type=token&redirect_uri=${encodeURI(redirect_uri)}`);
+}
+
+/**
+ * @param {String} HTML representing a single element
+ * @return {Element}
+ */
+ function htmlToElement(html) {
+    var template = document.createElement('template');
+    html = html.trim(); // Never return a text node of whitespace as the result
+    template.innerHTML = html;
+    return template.content.firstChild;
 }
 
 var cd;
@@ -206,7 +203,6 @@ function searchButton(){
   //var l = document.getElementById("rootRR").childNodes;
   //console.info(l);
   let typedSong = document.getElementById("songSearch").value;
-  loadSongPlayWidget(typedSong);
   //var searchSong = 
   generateVis(typedSong)
 }
@@ -229,17 +225,22 @@ async function loadSongPlayWidget(songName) {
   let songUrl = `https://open.spotify.com/embed/track/${trackId}`;
 
   let iframe = document.createElement('iframe');
-  iframe.setAttribute('width', '250');
+  // iframe.setAttribute('width', '250');
   iframe.setAttribute('height', '300');
+  iframe.setAttribute('width', '250');
   iframe.setAttribute('frameborder', '0');
   iframe.setAttribute('allowtransparency', 'true');
   iframe.setAttribute('allow', 'encrypted-media');
   iframe.setAttribute('src', songUrl);
-
-  document.getElementById('left-panel').appendChild(iframe);
+  let leftPanel = document.getElementById('left-panel');
+  while (leftPanel.firstChild) {
+    leftPanel.removeChild(leftPanel.firstChild);
+  }
+  leftPanel.appendChild(iframe);
 }
 
 function generateVis(songname){
+  loadSongPlayWidget(songname);
   document.getElementById("ttsong").innerHTML = "Taste of " + songname;
 
 
@@ -248,7 +249,13 @@ function generateVis(songname){
 
 
 
-  document.getElementById("clusterpanel").style.display="none";
+  let clusterpanel = document.getElementById("clusterpanel");
+  
+  clusterpanel.style.opacity="0"
+  setTimeout(() => {
+    clusterpanel.style.display="none";
+  }, 200);
+
   
   if (cd == null) {
     //console.info("aaaa")
@@ -340,6 +347,31 @@ function generateVis(songname){
     console.info(jsonFile); 
     d3.json(jsonFile)
         .then(data=>{
+
+
+            // --- create table stat for panel ---
+
+            let table = htmlToElement(`
+            <table id="stat-table" class="table table-condensed">
+              <tbody>
+                <tr>
+                  <td>Total Songs</td>
+                  <td>${data.map((c) => c.songs.length).reduce((a, v) => a + v, 0)}</td>
+                </tr>
+                <tr>
+                  <td>Top Cluster Similarity</td>
+                  <td>${1/data.reduce((a, c) => c.centerDistance < a ? c.centerDistance : a, Infinity).toFixed(3)}</td>
+                </tr>
+                <tr>
+                  <td>Avg Cluster Similarity</td>
+                  <td>${1 / (data.reduce((a, c) => c.centerDistance + a, 0) / data.length).toFixed(3)}</td>
+                </tr>
+              </tbody>
+            </table>
+            `)
+
+            document.getElementById('left-panel').appendChild(table);
+            // -----------------------------------
             //console.log(data);
             const maxR = 50;
 
@@ -452,7 +484,7 @@ function generateVis(songname){
                     cd.on("mouseout",function(){
                       if (global.selectedIndex === i) {
                         d3.select(this).style('stroke-width',10);
-                        d3.select(this).style('stroke', '#D16666');
+                        d3.select(this).style('stroke', 'rgb(249, 170, 72)');
                         return;
                       }
                       d3.select(this).style('stroke-width',2);
@@ -474,8 +506,14 @@ function generateVis(songname){
                       }
 
                       d3.select(this).style('stroke-width',10);
-                      d3.select(this).style('stroke', '#D16666');
-                      document.getElementById("clusterpanel").style.display="";
+                      d3.select(this).style('stroke', 'rgb(249, 170, 72)');
+                      let cpanel = document.getElementById("clusterpanel");
+                      cpanel.style.display="";
+                      cpanel.style.opacity="0";
+                      setTimeout(() => {
+                        cpanel.style.opacity="1";
+                      }, 10);
+
                       var s_l = document.getElementById("SongList")
                       var s_l_children = s_l.childNodes;
                       for(let i = s_l_children.length - 1; i >= 0; i--) { 
@@ -533,15 +571,29 @@ function generateVis(songname){
 
                         let trackId = resp.tracks.items[0].id;
                         let songUrl = `https://open.spotify.com/embed/track/${trackId}`;
+                        
+                        let parent = document.createElement('div');
+                        parent.classList.add('cluster-iframe-parent');
 
                         let iframe = document.createElement('iframe');
-                        iframe.setAttribute('width', '250');
                         iframe.setAttribute('height', '80');
                         iframe.setAttribute('frameborder', '0');
                         iframe.setAttribute('allowtransparency', 'true');
                         iframe.setAttribute('allow', 'encrypted-media');
                         iframe.setAttribute('src', songUrl);
-                        songlistElement.appendChild(iframe);
+
+                        parent.appendChild(iframe);
+
+                        let button = htmlToElement(`
+                        <button type="button" id="sideSearchButton" class="btn btn-primary btn-warning">
+                          <span class="glyphicon glyphicon-search"></span> 
+                        </button>`);
+
+                        button.onclick = () => {
+                          generateVis(d.songs[i])
+                        };
+                        parent.appendChild(button);
+                        songlistElement.appendChild(parent);
                       }
 
                       
