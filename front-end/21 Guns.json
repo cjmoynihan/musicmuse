@@ -20,7 +20,8 @@
       "A",
       "B",
       "C"
-    ]
+    ],
+    "angle": 0.17
   },
   {
     "songs": [
@@ -30,7 +31,8 @@
       "Harry Styles"
     ],
     "centerDistance": 0.40,
-    "selfSimilarity": 0.8
+    "selfSimilarity": 0.8,
+    "angle": 1.0
   },
   {
     "songs": [
@@ -42,6 +44,7 @@
       "Lady Gaga"
     ],
     "centerDistance": 0.40,
-    "selfSimilarity": 0.8
+    "selfSimilarity": 0.8,
+    "angle": 0.34
   }
 ]

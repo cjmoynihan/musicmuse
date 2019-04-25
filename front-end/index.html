@@ -11,7 +11,9 @@
 </head>
 <body>
 <nav class="navbar navbar-inverse" role="navigation">
-  <div class="container-fluid"> 
+  <div class="container-fluid" style="
+    z-index: 11 !important;
+    box-shadow: 3px 3px 5px 6px;"> 
   <div class="navbar-header">
     <a style="text-align: center; font-family: Apple Chancery, cursive; font-size: 20" class="navbar-brand" href="#">Music Muse</a>
   </div>
@@ -20,7 +22,7 @@
 </nav>
 
 <div class="left">
-  <div class="panel" id="songinfopanel" style="margin-top: 30px; overflow-y: auto; background-color:#FFEFD5;">
+  <div class="panel" id="songinfopanel" style="margin-top: 30px; overflow-y: auto; background-color:#222;">
     <div class="panel-heading">
         <div id="searchDiv" class="form-group">
 
@@ -32,7 +34,7 @@
       
     </div>
 
-    <div id="left-panel" style="background-color: #FFEFD5; height: 500px" >
+    <div id="left-panel" style="background-color: #222; height: 500px" >
       <!-- <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
       <p>loading</p>  WIP -->
     </div>
@@ -48,21 +50,21 @@
   </div>
 
   <div class="root" id="vislization" >
-    <svg id = "rootRR" width="900" height="800" style="margin-left:-90px; margin-right:0px;margin-top: -120px; float: left;"></svg>
+    <svg id = "rootRR" width="900" height="800" style="margin-left:-100px; margin-right:0px;margin-top: -130px; float: left;"></svg>
   </div>
 
 </div>
 
 
 <div class="right">
-  <div class="panel" id="clusterpanel" style="display: none; margin-top: 30px; overflow-y: auto; background-color:#FFEFD5;">
-  <div class="panel-heading">
-    <h3 class="panel-title">Songs in the cluster</h3>
+  <div class="panel" id="clusterpanel" style="display: none; margin-top: 30px; overflow-y: auto; background-color:#2220; height: 572px;">
+  <div class="panel-heading" style="background-color: #222;">
+    <h3 class="panel-title" color="white;">Songs in the cluster</h3>
     
   </div>
   
   
-  <div class="abc" style="background-color: #FFEFD5;">
+  <div class="abc" style="background-color: #2220;">
     <div class = "sos" id="SongList" style="padding-left: 0px; padding-top: 0px; padding-left: 0px;">  
     </div>
 
