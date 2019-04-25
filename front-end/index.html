@@ -387,7 +387,7 @@ function generateVis(songname){
             const maxSL = d3.max(data, d=>d.songs.length);
             const scale = d3.scaleLinear()
                 .domain([0,maxDis])
-                .range([5,r - maxR -10]);
+                .range([maxR,r - maxR -10]);
 
             const scaleR = d3.scaleLinear()
                 .domain([0,maxSL])
