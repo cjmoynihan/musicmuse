@@ -26,6 +26,7 @@ import os
 # Constants
 converge_db = db_reader.converge_db()
 color_similarity_threshold = 0.70
+legend_position = 7/4 * math.pi
 
 def get_similarity_matrix_by_title_artist(title, artist, sim_limit=50):
     print("Gathering similar songs")
@@ -164,6 +165,13 @@ def get_angles_from_clusters(clusters, center_distances, cosimilarity):
         # Fix the original colors list
         for (hue, (_, orig_index)) in enumerate(color_dict[color]):
             colors[orig_index][1] = hue
+
+    # Do some math to rotate all clusters such that the largest gap is placed where the legend is...
+    # biggest_gap = (gap_size, position)
+    biggest_gap = max((angle2 - angle1, angle1) for (angle1, angle2) in zip(angles, (angles[1:] + [angles[0]])))
+    current_gap_position = biggest_gap[1] + (biggest_gap[0] / 2)
+    rotation_amount = legend_position - current_gap_position
+    angles = [((angle + rotation_amount) % (2 * math.pi)) for angle in angles]
     print("Done assigning angles and colors")
     return best_ordering, angles, colors
 
@@ -242,6 +250,9 @@ def add_all_songs():
             create_json(title, artist)
         except ValueError:
             pass
+
+def json_all_modern():
+    pass
 
 if __name__ == "__main__":
     # test_jsons()
