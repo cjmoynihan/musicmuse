@@ -375,12 +375,12 @@ function generateVis(songname){
                   <td style="color: white;">${data.map((c) => c.songs.length).reduce((a, v) => a + v, 0)}</td>
                 </tr>
                 <tr>
-                  <td style="color: white;">Top Cluster Similarity</td>
-                  <td style="color: white;">${1/data.reduce((a, c) => c.centerDistance < a ? c.centerDistance : a, Infinity).toFixed(3)}</td>
+                  <td style="color: white;">Top Cluster %</td>
+                  <td style="color: white;">${data.reduce((a, c) => c.centerDistance > a ? c.centerDistance : a, -Infinity).toFixed(3)}</td>
                 </tr>
                 <tr>
-                  <td style="color: white;">Avg Cluster Similarity</td>
-                  <td style="color: white;">${1 / (data.reduce((a, c) => c.centerDistance + a, 0) / data.length).toFixed(3)}</td>
+                  <td style="color: white;">Avg Cluster %</td>
+                  <td style="color: white;">${(data.reduce((a, c) => c.centerDistance + a, 0) / data.length).toFixed(3)}</td>
                 </tr>
               </tbody>
             </table>
@@ -617,7 +617,7 @@ function generateVis(songname){
 
                         button.onclick = () => {
                           //console(d.song[i])
-                          generateVis(d.songs[i] + "_" + d.artists[i])
+                          generateVis(d.songs[i] + " " + d.artists[i])
                         };
                         parent.appendChild(button);
                         songlistElement.appendChild(parent);
