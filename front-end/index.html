@@ -373,7 +373,7 @@ function generateVis(songname){
     Jpath = "/songjson/";
     Jfile = Jpath + jsonFile;
     console.info(Jfile); 
-    d3.json(Jfile)
+    d3.json(encodeURIComponent(Jfile))
         .then(data=>{
 
 
