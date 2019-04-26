@@ -83,7 +83,8 @@
 $('#songSearch').typeahead({
     source: songsSuggestions,
     showHintOnFocus: "all",
-    items: 20,
+    items: 15,
+    afterSelect: generateVis
 });
   
 // ---------------- Search autocomplete end -------------------------
