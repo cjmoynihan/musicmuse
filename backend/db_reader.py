@@ -1,5 +1,7 @@
+"""
+Home base for managing the databases of song data
+"""
 import sqlite3 as sq3
-from itertools import chain
 
 dbfile = 'lastfm_similars.db'
 
@@ -215,7 +217,7 @@ class converge_db:
         """, (orig_sid,))
         # return self.c.fetchall()
         # Just get good values
-        return [(t, a, sim) for (t, a, sim) in self.c if sim >= .5]
+        return [(t, a, sim) for (t, a, sim) in self.c if sim]
 
     # def check_all(self):
     #     orig_sim_db = db()
@@ -223,6 +225,7 @@ class converge_db:
 
 if __name__ == '__main__':
     C = converge_db()
+
     # print(sum(1 for _ in C.c.execute("SELECT track_id FROM simple_track_id")))
     # 839122 lines
     # ~ 766100 simple_ids
