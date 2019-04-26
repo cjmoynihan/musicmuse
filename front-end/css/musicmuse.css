@@ -174,3 +174,15 @@ iframe {
 }
 
 /* ----------------------- */
+
+.abc::-webkit-scrollbar {
+  width: 0.3em;
+}
+
+.abc::-webkit-scrollbar-track {
+  background-color: #222;
+}
+
+.abc::-webkit-scrollbar-thumb {
+  background-color: rgb(165, 165, 165);
+}
