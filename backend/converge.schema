@@ -7,3 +7,12 @@ CREATE TABLE IF NOT EXISTS simple_song_id(
 	title TEXT NOT NULL,
 	artist TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS song_data_ndx ON simple_song_id (title, artist, simple_id);
+CREATE INDEX IF NOT EXISTS track_ndx ON simple_track_id (simple_id, track_id);
+CREATE TABLE IF NOT EXISTS simple_similars(
+	simple_id_orig INT NOT NULL,
+	simple_id_other INT NOT NULL,
+	similarity REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS simple_similars_orig_ndx ON simple_similars (simple_id_orig);
+CREATE INDEX IF NOT EXISTS simple_similars_other_ndx ON simple_similars (simple_id_other);
