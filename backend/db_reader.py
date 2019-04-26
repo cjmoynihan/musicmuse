@@ -1,8 +1,12 @@
 """
 Home base for managing the databases of song data
 """
+# Imports
 import sqlite3 as sq3
+import lastfm_api
+import time
 
+# Constants
 dbfile = 'lastfm_similars.db'
 
 example_tracks = [
@@ -88,6 +92,7 @@ class converge_db:
         self.conn = sq3.connect(self.db_name)
         self.c = self.conn.cursor()
         self.create_tables()
+        self.next_simple_id = (self.c.execute("SELECT MAX(simple_id) FROM simple_song_id").fetchone())[0]+1
 
     def read_schema(self):
         with open(self.db_schema) as f:
@@ -219,12 +224,59 @@ class converge_db:
         # Just get good values
         return [(t, a, sim) for (t, a, sim) in self.c if sim]
 
-    # def check_all(self):
-    #     orig_sim_db = db()
-    #     # all_tids =
+    def add_from_lastfm(self, title, artist, commit=False):
+        """
+        Grabs the song similarity information from last_fm and uses it to update the database
+        Returns the list of similar songs to use (if it doesn't call, it doesn't worry about it either)
+        """
+        created, sid = self.insert_or_ignore_title_artist(title, artist)
+        # Have to let this non-commit go by first
+        if self.c.execute("SELECT simple_id_orig FROM simple_similars WHERE simple_id_orig = ?", (sid,)).fetchone():
+            print("Already added song {0} by {1}".format(title, artist))
+            return list()
+        print("Adding song {0} by {1}".format(title, artist))
+        j = lastfm_api.track_similars(title, artist)
+        # fixed_attributes = j['similartracks'].get('@attr', dict())
+        # title = fixed_attributes.get(title, title)
+        # artist = fixed_attributes.get(artist, artist)
+        all_similar_details = j['similartracks'].get('track', list())
+        print("Recieved {0} similar songs".format(len(all_similar_details)))
+        for track_dict in all_similar_details:
+            other_title, other_artist, other_sim = lastfm_api.read_sim_track_json(track_dict)
+            # Check to see if song exists
+            other_created, other_sid = self.insert_or_ignore_title_artist(other_title, other_artist)
+            self.c.execute("INSERT INTO simple_similars(simple_id_orig, simple_id_other, similarity) VALUES(?, ?, ?)", (sid, other_sid, other_sim))
+        if commit:
+            self.conn.commit()
+        return all_similar_details
+
+    def add_all_sim_lastfm(self, title, artist):
+        for (other_title, other_artist, other_sim) in map(lastfm_api.read_sim_track_json, self.add_from_lastfm(title, artist)):
+            # For now, make sure we don't call the service too many times/second
+            time.sleep(1)
+            self.add_from_lastfm(other_title, other_artist)
+        self.conn.commit()
+
+    def insert_or_ignore_title_artist(self, title, artist):
+        self.c.execute("SELECT simple_id FROM simple_song_id WHERE title = ? AND artist = ?", (title, artist))
+        result = self.c.fetchone()
+        if result is None:
+            new_sid = self.next_simple_id
+            self.c.execute("INSERT INTO simple_song_id(simple_id, title, artist) VALUES(?, ?, ?)", (new_sid, title, artist))
+            self.next_simple_id += 1
+            return (True, new_sid)
+        return (False, result[0])
+
+def add_popular(C):
+    for (title, artist, match) in lastfm_api.get_popular():
+        time.sleep(1)
+        C.add_all_sim_lastfm(title, artist)
+
 
 if __name__ == '__main__':
     C = converge_db()
+    add_popular(C)
+
 
     # print(sum(1 for _ in C.c.execute("SELECT track_id FROM simple_track_id")))
     # 839122 lines

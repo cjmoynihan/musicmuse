@@ -31,6 +31,9 @@ def get_similarity_matrix_by_title_artist(title, artist, sim_limit=50):
     print("Gathering similar songs")
     all_data = converge_db.get_sorted_similars(title, artist)
     print("Found {0} similar songs".format(len(all_data)))
+    if (len(all_data) < 5):
+        print("Not enough, aborting")
+        raise ValueError()
     if sim_limit and len(all_data) > sim_limit:
         print("Reducing size to {0}".format(sim_limit))
         all_data = all_data[:sim_limit]
@@ -233,8 +236,15 @@ def test_clustering():
     print("BEST PICK: {0}".format(best_pick[1]))
     print("WITH SMALL CLUSTER {0}".format(best_pick[0]))
 
+def add_all_songs():
+    for (title, artist) in converge_db.all_song_data():
+        try:
+            create_json(title, artist)
+        except ValueError:
+            pass
 
 if __name__ == "__main__":
     # test_jsons()
     # test_clustering()
-    create_json(*('Green, Green Grass of Home', 'Porter Wagoner'))
+    # create_json(*('Green, Green Grass of Home', 'Porter Wagoner'))
+    add_all_songs()

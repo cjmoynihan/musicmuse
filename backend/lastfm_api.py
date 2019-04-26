@@ -57,6 +57,29 @@ def track_similars(title, artist, limit=None):
     j = resp.json()
     return j
 
+def _get_popular():
+    # Gets the popular music
+    data = {
+        "method": "chart.gettoptracks",
+        "api_key": api_key,
+        "format": "json"
+    }
+    resp = requests.get(url=request_endpoint, headers=request_headers, data=data)
+    j = resp.json()
+    return j
+
+def get_popular():
+    j = _get_popular()
+    print(j)
+    return list(map(read_sim_track_json, j["tracks"]["track"]))
+
+def read_sim_track_json(track_dict):
+    print(track_dict)
+    other_title = track_dict['name']
+    other_artist = track_dict['artist']['name']
+    other_sim = track_dict.get('match', 0.5)
+    return (other_title, other_artist, other_sim)
+
 def run_tests():
     test_title, test_artist = (
         "Lone Digger",
