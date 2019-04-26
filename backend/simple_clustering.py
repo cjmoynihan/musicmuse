@@ -81,14 +81,18 @@ if __name__ == "__main__":
     # Enable using real data w/ API
     # Chain to grab more values
     all_songs = converge_db.all_song_data()
-    print(sum(1 for _ in filter(lambda song_data: len(converge_db.get_sorted_similars(*song_data)) >= 30, all_songs)))
-    exit()
-    i=0
+    # print(sum(1 for _ in filter(lambda song_data: len(converge_db.get_sorted_similars(*song_data)) >= 30, all_songs)))
     for (i, song_data) in enumerate(filter(lambda song_data: len(converge_db.get_sorted_similars(*song_data)) >= 30, all_songs), 1):
         print(song_data)
-
-        # create_json(*song_data)
-    print("{0} songs clusters".format(i))
+        create_json(*song_data)
+        print("FINISHED {0}".format(i))
+    # converge_db.c.execute("SELECT title, artist FROM simple_song_id WHERE artist = ?", ("Kesha",))
+    # for (title, artist) in converge_db.c:
+    #     print(title, artist)
+    #     num_similar = len(converge_db.get_sorted_similars(title, artist))
+    #     if num_similar >= 10:
+    #         create_json(title, artist)
+    # print("{0} songs clusters".format(i))
     # print("Getting songs::")
     # num_songs = 10
     # for (title, artist) in islice(converge_db.all_song_data(), num_songs):
