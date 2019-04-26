@@ -185,3 +185,16 @@ iframe {
 .abc::-webkit-scrollbar-thumb {
   background-color: rgb(165, 165, 165);
 }
+
+
+/* ------------- drop down ------------------ */
+.dropdown-menu {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+ul.dropdown-menu {
+  min-width: 180px;
+}
+
+/* ------------------------------------------ */

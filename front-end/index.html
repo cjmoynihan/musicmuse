@@ -8,6 +8,7 @@
   <script src="https://d3js.org/d3.v5.min.js"></script>
   <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
   <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-3-typeahead/4.0.2/bootstrap3-typeahead.min.js"></script>
 </head>
 <body>
 <nav class="navbar navbar-inverse" role="navigation" style="z-index: 11; border-radius: 0px; border: 0px;">
@@ -23,9 +24,9 @@
 <div class="left">
   <div class="panel" id="songinfopanel" style="overflow-y: auto; background-color:#222; border-radius: 0px">
     <div class="panel-heading" style="text-align: center">
-        <div id="searchDiv" class="form-group">
+        <div id="searchDiv" class="form-group" autocomplete="off">
 
-      <input type="text" id="songSearch" style="width: 180px; height: 35px;">
+      <input type="text" id="songSearch" style="width: 180px; height: 35px;" autocomplete="off">
       <button type="button" class="btn btn-default" onclick="searchButton()">Search</button>
       
       
@@ -74,8 +75,18 @@
 </body>
 </html>
 
-
+<script type="text/javascript" src="js/SongsSuggestions.js"></script>
 <script>
+
+// ---------- Search autocomplete suggestions code ------------------
+
+$('#songSearch').typeahead({
+    source: songsSuggestions,
+    showHintOnFocus: "all",
+    items: 20,
+});
+  
+// ---------------- Search autocomplete end -------------------------
 var bluelist = ["rgb(136,190,240)","rgb(67,150,225)","rgb(19,121,203)"]
 var orangelist = ["rgb(255,166,122)","rgb(255,134,72)","rgb(236,75,0)"]
 var greenlist = ["rgb(48,200,163)","rgb(0,176,120)","rgb(0,146,97)"]
