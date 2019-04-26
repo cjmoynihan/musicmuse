@@ -397,7 +397,7 @@ function generateVis(songname){
               </tbody>
             </table>
             `)
-            getSongPlayWidget(songname.split('_').join(' ')).then((widget) => {
+            getSongPlayWidget(songname).then((widget) => {
               leftPanel.appendChild(widget);
               leftPanel.appendChild(table);
             })
