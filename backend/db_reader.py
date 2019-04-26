@@ -15,6 +15,9 @@ example_tracks = [
 ]
 example_track = example_tracks[0]
 
+non_uniques = [
+]
+
 def format_data(data, num_elements=2):
     # Unformats the data from a string
     result = data.split(',')
@@ -267,15 +270,35 @@ class converge_db:
             return (True, new_sid)
         return (False, result[0])
 
-def add_popular(C):
+    def find_non_unique(self):
+        temp_cur = self.conn.cursor()
+        temp_cur.execute("SELECT simple_id_orig, simple_id_other FROM simple_similars GROUP BY simple_id_orig, simple_id_other HAVING COUNT(*) > 1")
+        for (id1, id2) in temp_cur:
+            print(id1, id2)
+
+    def fix_non_uniques(self):
+        correct_values = list()
+        for (simple_id_orig, simple_id_other) in non_uniques:
+            self.c.execute("SELECT * FROM simple_similars WHERE simple_id_orig = ? AND simple_id_other = ? ORDER BY rowid DESC", (simple_id_orig, simple_id_other))
+            correct_values.append(self.c.fetchone())
+            self.c.execute("DELETE FROM simple_similars WHERE simple_id_orig = ? AND simple_id_other = ?", (simple_id_orig, simple_id_orig))
+        for (simple_id_orig, simple_id_other, similarity) in correct_values:
+            self.c.execute("INSERT INTO simple_similars(simple_id_orig, simple_id_other, similarity) VALUES(?, ?, ?)", (simple_id_orig, simple_id_other, similarity))
+        self.conn.commit()
+
+
+def _add_popular(C):
     for (title, artist, match) in lastfm_api.get_popular():
         time.sleep(1)
         C.add_all_sim_lastfm(title, artist)
 
 
+
 if __name__ == '__main__':
     C = converge_db()
-    add_popular(C)
+    # add_popular(C)
+    # C.fix_non_uniques()
+    C.c.execute("SELECT simple_id FROM simple_song_id WHERE ")
 
 
     # print(sum(1 for _ in C.c.execute("SELECT track_id FROM simple_track_id")))

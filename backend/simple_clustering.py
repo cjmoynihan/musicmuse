@@ -16,6 +16,7 @@ A file for managing all the clustering aspects
 
 # Imports
 import db_reader
+import lastfm_api
 import numpy as np
 from sklearn.cluster import SpectralClustering
 import json
@@ -252,10 +253,22 @@ def add_all_songs():
             pass
 
 def json_all_modern():
-    pass
+    first_modern_data = next(iter(lastfm_api.get_popular()))
+    modern_title, modern_artist, modern_match = first_modern_data
+    converge_db.c.execute("SELECT simple_id FROM simple_song_id WHERE title = ? AND artist = ?", (modern_title, modern_artist))
+    # Get the first new addition to the database
+    first_modern_sid = converge_db.c.fetchone()[0]
+    # Every sid after is a new sid
+    temp_cursor = converge_db.conn.cursor()
+    # Ignore the sids that we have no similars for
+    temp_cursor.execute("SELECT simple_id_orig FROM simple_similars WHERE simple_id_orig > ?", (first_modern_sid - 1,))
+    for new_sid in temp_cursor:
+        title, artist = converge_db.c.execute("SELECT title, artist FROM simple_song_id WHERE simple_id = ?", new_sid).fetchone()
+        create_json(title, artist)
 
 if __name__ == "__main__":
     # test_jsons()
     # test_clustering()
     # create_json(*('Green, Green Grass of Home', 'Porter Wagoner'))
-    add_all_songs()
+    # add_all_songs()
+    json_all_modern()

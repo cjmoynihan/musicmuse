@@ -70,11 +70,9 @@ def _get_popular():
 
 def get_popular():
     j = _get_popular()
-    print(j)
     return list(map(read_sim_track_json, j["tracks"]["track"]))
 
 def read_sim_track_json(track_dict):
-    print(track_dict)
     other_title = track_dict['name']
     other_artist = track_dict['artist']['name']
     other_sim = track_dict.get('match', 0.5)
