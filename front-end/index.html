@@ -8,37 +8,35 @@
   <script src="https://d3js.org/d3.v5.min.js"></script>
   <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
   <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-3-typeahead/4.0.2/bootstrap3-typeahead.min.js"></script>
 </head>
-<body style="
-">
-<nav class="navbar navbar-inverse" role="navigation">
-  <div class="container-fluid"> 
+<body>
+<nav class="navbar navbar-inverse" role="navigation" style="z-index: 11; border-radius: 0px; border: 0px;">
+  <div class="container-fluid" style="
+    box-shadow: -1px 1px 8px 1px;"> 
   <div class="navbar-header">
-    <a class="navbar-brand" href="#">Music Muse</a>
+    <a style="text-align: center; font-family: Apple Chancery, cursive; font-size: 20" class="navbar-brand" href="#">Music Muse</a>
   </div>
   
   </div>
 </nav>
 
 <div class="left">
-  <div width= 100 hight=100 class="panel panel-warning" id="songinfopanel" style="margin-top: 30px; overflow: scroll; background-color:#FFEFD5;">
-    <div class="panel-heading">
-      <h3 class="panel-title">
-        <div class="form-group">
+  <div class="panel" id="songinfopanel" style="overflow-y: auto; background-color:#222; border-radius: 0px">
+    <div class="panel-heading" style="text-align: center">
+        <div id="searchDiv" class="form-group" autocomplete="off">
 
-      <input type="text" id="songSearch" style="width: 150px; height: 35px;"><button style="width: 100px; margin-bottom: 6px; margin-left: 2px" type="button" class="btn btn-default" onclick="searchButton()">Search</button>
+      <input type="text" id="songSearch" style="width: 180px; height: 35px;" autocomplete="off">
+      <button type="button" class="btn btn-default" onclick="searchButton()">Search</button>
       
       
     </div>
-    
-      </h3>
-    
+      
     </div>
 
-    <div style="background-color: #FFEFD5; height: 500px" >
-      
-
-    
+    <div id="left-panel" style="background-color: #222; height: 500px" >
+      <!-- <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
+      <p>loading</p>  WIP -->
     </div>
   </div>
 
@@ -47,47 +45,99 @@
 
 <div class="middle">
   <div>
-    <h1 id = "ttsong" class="ttcc" style="text-align: center; font-family: Jazz LET, fantasy"><font face="verdana"><center></center></font></h1>
+    <h1 id = "ttsong" class="ttcc" style="text-align: center; font-family: Jazz LET, fantasy; padding: 0px 10px; font-size: 28px;"><font face="verdana"><center></center></font></h1>
 
   </div>
 
   <div class="root" id="vislization" >
-    <svg id = "rootRR" width="900" height="800" style="margin-left:0px; margin-right:0px;margin-top: -120px; float: left;"></svg>
+    <svg id = "rootRR" width="900" height="800" style="margin-left:-140px; margin-right:0px;margin-top: -130px; float: left;"></svg>
   </div>
 
 </div>
 
 
 <div class="right">
-  <div width= 100 hight=100 class="panel panel-warning" id="clusterpanel" style="display: none; margin-top: 30px; overflow: scroll; background-color:#FFEFD5;">
-  <div class="panel-heading">
-    <h3 class="panel-title">Songs in the cluster</h3>
+  <div class="panel" id="clusterpanel" style="display: none; background-color:#2220; height: 572px; border: 0px;">
+  <div class="panel-heading" style="background-color: #222; text-align: center; border-radius: 0px">
+    <h3 class="panel-titleee" style="color: white;  margin: 6px;">Songs in the cluster</h3>
     
   </div>
   
   
-  <div class="abc" style="background-color: #FFEFD5;">
-    <ul class = "sos" id="SongList" style="padding-left: 0px; padding-top: 0px; padding-left: 0px;">  
-    </ul>
+  <div class="abc" style="background-color: #2220; height: 513px; overflow-y: auto">
+    <div class = "sos" id="SongList" style="padding-left: 0px; padding-top: 0px; padding-left: 0px;">  
+    </div>
 
     
   </div>
 </div>
-
-
-
 </div>
-
-
-
-
-
-
 </body>
 </html>
 
-
+<script type="text/javascript" src="js/SongsSuggestions.js"></script>
 <script>
+
+// ---------- Search autocomplete suggestions code ------------------
+
+$('#songSearch').typeahead({
+    source: songsSuggestions,
+    showHintOnFocus: "all",
+    items: 15
+});
+  
+// ---------------- Search autocomplete end -------------------------
+var bluelist = ["rgb(136,190,240)","rgb(67,150,225)","rgb(19,121,203)"]
+var orangelist = ["rgb(255,166,122)","rgb(255,134,72)","rgb(236,75,0)"]
+var greenlist = ["rgb(48,200,163)","rgb(0,176,120)","rgb(0,146,97)"]
+var redlist = ["rgb(255,83,142)","rgb(255,131,171)","rgb(237,0,54)"]
+var purplelist = ["rgb(200,188,231)","rgb(161,71,213)","rgb(134,0,211)"]
+var darkbluelist = ["rgb(96,139,179)","rgb(64,118,167)","rgb(7,87,147)"]
+var pinklist = ["rgb(244,138,212)","rgb(233,99,194)","rgb(210,0,160)"]
+var lightbulelist = ["rgb(155,151,255)","rgb(110,97,255)","rgb(90,66,254)"]
+
+var colorlist = []
+colorlist.push(bluelist)
+colorlist.push(orangelist)
+colorlist.push(greenlist)
+colorlist.push(redlist)
+colorlist.push(purplelist)
+colorlist.push(darkbluelist)
+colorlist.push(pinklist)
+colorlist.push(lightbulelist)
+
+function getHashParams() {
+  // Taken from: https://stackoverflow.com/questions/4197591/parsing-url-hash-fragment-identifier-with-javascript?noredirect=1&lq=1
+  var hashParams = {};
+  var e,
+      a = /\+/g,  // Regex for replacing addition symbol with a space
+      r = /([^&;=]+)=?([^&;]*)/g,
+      d = function (s) { return decodeURIComponent(s.replace(a, " ")); },
+      q = window.location.hash.substring(1);
+   while (e = r.exec(q))
+    hashParams[d(e[1])] = d(e[2]);
+   return hashParams;
+}
+ var hashParams = undefined;
+if (window.location.hash) {
+  hashParams = getHashParams();
+  // window.location.hash = '';
+} else {
+  let redirect_uri = `http://localhost:8000/`
+  window.location.replace(`https://accounts.spotify.com/authorize?client_id=42228dabc22e4e32979f31c097bf9b16&response_type=token&redirect_uri=${encodeURI(redirect_uri)}`);
+}
+
+/**
+ * @param {String} HTML representing a single element
+ * @return {Element}
+ */
+ function htmlToElement(html) {
+    var template = document.createElement('template');
+    html = html.trim(); // Never return a text node of whitespace as the result
+    template.innerHTML = html;
+    return template.content.firstChild;
+}
+
 var cd;
 let svg = d3.select("svg");
 let margin = {
@@ -184,14 +234,53 @@ textbox.addEventListener('keyup', (event) => {
 function searchButton(){
   //var l = document.getElementById("rootRR").childNodes;
   //console.info(l);
-  typedSong = document.getElementById("songSearch").value;
-
+  let typedSong = document.getElementById("songSearch").value;
   //var searchSong = 
-  generateVis(typedSong)  
+  generateVis(typedSong)
 }
+
+async function getSongPlayWidget(songName) {
+  let resp = await fetch(`https://api.spotify.com/v1/search?q=${encodeURI(songName)}&type=track&limit=1&`, {
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${hashParams.access_token}`
+    }
+  }).then(response => response.json());
+  
+  if (resp.tracks.items.length === 0) {
+    console.log('Could not find song: ', songName);
+    return;
+  }
+
+  let trackId = resp.tracks.items[0].id;
+  let songUrl = `https://open.spotify.com/embed/track/${trackId}`;
+
+  let iframe = document.createElement('iframe');
+  // iframe.setAttribute('width', '250');
+  iframe.setAttribute('height', '300');
+  iframe.setAttribute('width', '250');
+  iframe.setAttribute('frameborder', '0');
+  iframe.setAttribute('allowtransparency', 'true');
+  iframe.setAttribute('allow', 'encrypted-media');
+  iframe.setAttribute('src', songUrl);
+  return iframe;
+}
+
 function generateVis(songname){
+  let leftPanel = document.getElementById('left-panel');
+  while (leftPanel.firstChild) {
+    leftPanel.removeChild(leftPanel.firstChild);
+  }
   document.getElementById("ttsong").innerHTML = "Taste of " + songname;
-  document.getElementById("clusterpanel").style.display="none";
+
+  let clusterpanel = document.getElementById("clusterpanel");
+  
+  clusterpanel.style.opacity="0"
+  setTimeout(() => {
+    clusterpanel.style.display="none";
+  }, 200);
+
   
   if (cd == null) {
     //console.info("aaaa")
@@ -280,9 +369,38 @@ function generateVis(songname){
     console.info(dddd);
 
     jsonFile = String(songname) + ".json";
-    console.info(jsonFile); 
-    d3.json(jsonFile)
+    Jpath = "/songjson/";
+    Jfile = Jpath + jsonFile;
+    console.info(Jfile); 
+    d3.json(encodeURIComponent(Jfile))
         .then(data=>{
+
+
+            // --- create table stat for panel ---
+
+            let table = htmlToElement(`
+            <table id="stat-table" class="table table-condensed">
+              <tbody>
+                <tr>
+                  <td style="color: white;">Total Songs</td>
+                  <td style="color: white;">${data.map((c) => c.songs.length).reduce((a, v) => a + v, 0)}</td>
+                </tr>
+                <tr>
+                  <td style="color: white;">Top Cluster %</td>
+                  <td style="color: white;">${data.reduce((a, c) => c.centerDistance > a ? c.centerDistance : a, -Infinity).toFixed(3)}</td>
+                </tr>
+                <tr>
+                  <td style="color: white;">Avg Cluster %</td>
+                  <td style="color: white;">${(data.reduce((a, c) => c.centerDistance + a, 0) / data.length).toFixed(3)}</td>
+                </tr>
+              </tbody>
+            </table>
+            `)
+            getSongPlayWidget(songname).then((widget) => {
+              leftPanel.appendChild(widget);
+              leftPanel.appendChild(table);
+            })
+            // -----------------------------------
             //console.log(data);
             const maxR = 50;
 
@@ -297,11 +415,11 @@ function generateVis(songname){
             const maxSL = d3.max(data, d=>d.songs.length);
             const scale = d3.scaleLinear()
                 .domain([0,maxDis])
-                .range([0,r - maxR -10]);
+                .range([maxR,r - maxR -10]);
 
             const scaleR = d3.scaleLinear()
                 .domain([0,maxSL])
-                .range([0,maxR]);
+                .range([10,maxR]);
 
             let global = {selectedIndex: -1};
 
@@ -327,16 +445,17 @@ function generateVis(songname){
             .style('stroke','#D9D9D9')
             .style('fill',"none")*/
 
-
-            rootG.append("rect").attr("x",240).attr("y",160).attr("width", 50).attr("height",20).style("fill", "grey")
-            rootG.append("rect").attr("x",240).attr("y",190).attr("width", 50).attr("height",20).style("fill", "#A9A9A9")
+            rootG.append("text").attr("x",240).attr("y",165).text("% of Users like").style("font-size", "17px").attr("alignment-baseline","middle")
+            rootG.append("rect").attr("x",240).attr("y",180).attr("width", 50).attr("height",20).style("fill", "grey")
+            rootG.append("rect").attr("x",240).attr("y",200).attr("width", 50).attr("height",20).style("fill", "#A9A9A9")
             rootG.append("rect").attr("x",240).attr("y",220).attr("width", 50).attr("height",20).style("fill", "#D9D9D9")
-            rootG.append("text").attr("x", 305).attr("y", 170).text("0 ~ 25%").style("font-size", "17px").attr("alignment-baseline","middle")
-            rootG.append("text").attr("x", 305).attr("y", 200).text("25% ~ 50%").style("font-size", "17px").attr("alignment-baseline","middle")
-            rootG.append("text").attr("x", 305).attr("y", 230).text("50% ~ 75%").style("font-size", "17px").attr("alignment-baseline","middle")
+            rootG.append("text").attr("x", 300).attr("y", 190).text("> 75%").style("font-size", "15px").attr("alignment-baseline","middle")
+            rootG.append("text").attr("x", 300).attr("y", 210).text("> 50%").style("font-size", "15px").attr("alignment-baseline","middle")
+            rootG.append("text").attr("x", 300).attr("y", 230).text("> 25%").style("font-size", "15px").attr("alignment-baseline","middle")
 
 
             data.forEach((d,i)=>{
+                console.info(d.centerDistance);
                 const y = scale(d.centerDistance) * Math.sin(d.angle);
                 const x = scale(d.centerDistance) * Math.cos(d.angle);
 
@@ -362,7 +481,8 @@ function generateVis(songname){
                     .attr('cx', 0)
                     .attr('cy', 0)
                     .attr('r',0)
-                    .style('fill',blues(i))
+                    //.style('fill',blues(i))
+                    .style('fill',colorlist[d.color[0]][0])
                     .style('stroke','#D9D9D9')
 
                     cd
@@ -401,7 +521,7 @@ function generateVis(songname){
                     cd.on("mouseout",function(){
                       if (global.selectedIndex === i) {
                         d3.select(this).style('stroke-width',10);
-                        d3.select(this).style('stroke', '#D16666');
+                        d3.select(this).style('stroke', 'rgb(249, 170, 72)');
                         return;
                       }
                       d3.select(this).style('stroke-width',2);
@@ -412,8 +532,8 @@ function generateVis(songname){
                     });
                     
                     let k = i;
-                    cd.on("click",function(){
-                      global.selectedIndex = k;
+                    cd.on("click", async function(){
+                      global.selectedIndex = i;
 
                       let reccs = document.getElementsByClassName("recc");
                       for (let i = 0; i < reccs.length; i++) {
@@ -423,11 +543,17 @@ function generateVis(songname){
                       }
 
                       d3.select(this).style('stroke-width',10);
-                      d3.select(this).style('stroke', '#D16666');
-                      document.getElementById("clusterpanel").style.display="";
+                      d3.select(this).style('stroke', 'rgb(249, 170, 72)');
+                      let cpanel = document.getElementById("clusterpanel");
+                      cpanel.style.display="";
+                      cpanel.style.opacity="0";
+                      setTimeout(() => {
+                        cpanel.style.opacity="1";
+                      }, 10);
+
                       var s_l = document.getElementById("SongList")
                       var s_l_children = s_l.childNodes;
-                      for(var i = s_l_children.length - 1; i >= 0; i--) { 
+                      for(let i = s_l_children.length - 1; i >= 0; i--) { 
 
                       
                         //console.info(i) 
@@ -435,33 +561,77 @@ function generateVis(songname){
                         }
 
 
-                      for (var i = 0; i<d.songs.length;i++) {
-                        var s = document.createElement("LI");
-                        var s_n = document.createTextNode(d.songs[i]);
+                      // for (var i = 0; i<d.songs.length;i++) {
+                      //   var s = document.createElement("LI");
+                      //   var s_n = document.createTextNode(d.songs[i]);
 
-                        //var tSong = String(d.songs[i]);
-                        s.value = i;
+                      //   //var tSong = String(d.songs[i]);
+                      //   s.value = i;
                         
-                        var b_n = document.createElement("button");
+                      //   var b_n = document.createElement("button");
 
-                        b_n.id = ("bnIncluster");
-                        b_n.className = "btn btn-warning";
-                        b_n.innerHTML = "Search";
-                        var sname = d.songs[i];
-                        //b_n.onclick = generateVis(sname);
+                      //   b_n.id = ("bnIncluster");
+                      //   b_n.className = "btn btn-warning";
+                      //   b_n.innerHTML = "Search";
+                      //   var sname = d.songs[i];
+                      //   //b_n.onclick = generateVis(sname);
 
-                        b_n.onclick = function() {
-                          console.info(this.previousSibling.nodeValue);
+                      //   b_n.onclick = function() {
+                      //     console.info(this.previousSibling.nodeValue);
 
-                          //var songInCluster = (this.previousSibling.innerHTML);
-                          //console.info(songInCluster);
-                          //generateVis(String(this.previousSibling));
-                          generateVis(this.previousSibling.nodeValue);
+                      //     //var songInCluster = (this.previousSibling.innerHTML);
+                      //     //console.info(songInCluster);
+                      //     //generateVis(String(this.previousSibling));
+                      //     generateVis(this.previousSibling.nodeValue);
+                      //   }
+
+                      //   s.appendChild(s_n);
+                      //   s.appendChild(b_n);
+                      //   document.getElementById("SongList").appendChild(s);
+                      // }
+
+                      let songlistElement = document.getElementById('SongList');
+                      for (let i = 0; i < d.songs.length; i++) {
+                        let query = `${d.songs[i]} ${d.artists[i]}`;
+                        let resp = await fetch(`https://api.spotify.com/v1/search?q=${encodeURI(query)}&type=track&limit=1&`, {
+                          headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${hashParams.access_token}`
+                          }
+                        }).then(response => response.json());
+                        
+                        if (resp.tracks.items.length === 0) {
+                          console.log('Could not find song: ', d.songs[i], 'Artist: ', d.artists[i]);
+                          continue;
                         }
 
-                        s.appendChild(s_n);
-                        s.appendChild(b_n);
-                        document.getElementById("SongList").appendChild(s);
+                        let trackId = resp.tracks.items[0].id;
+                        let songUrl = `https://open.spotify.com/embed/track/${trackId}`;
+                        
+                        let parent = document.createElement('div');
+                        parent.classList.add('cluster-iframe-parent');
+
+                        let iframe = document.createElement('iframe');
+                        iframe.setAttribute('height', '80');
+                        iframe.setAttribute('frameborder', '0');
+                        iframe.setAttribute('allowtransparency', 'true');
+                        iframe.setAttribute('allow', 'encrypted-media');
+                        iframe.setAttribute('src', songUrl);
+
+                        parent.appendChild(iframe);
+
+                        let button = htmlToElement(`
+                        <button type="button" id="sideSearchButton" class="btn btn-primary btn-warning">
+                          <span class="glyphicon glyphicon-search"></span> 
+                        </button>`);
+
+                        button.onclick = () => {
+                          //console(d.song[i])
+                          generateVis(d.songs[i] + " " + d.artists[i])
+                        };
+                        parent.appendChild(button);
+                        songlistElement.appendChild(parent);
                       }
 
                       
