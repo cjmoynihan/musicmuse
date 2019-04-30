@@ -30,22 +30,22 @@ color_similarity_threshold = 0.70
 legend_position = 7/4 * math.pi
 
 def get_similarity_matrix_by_title_artist(title, artist, sim_limit=50):
-    print("Gathering similar songs")
+    # print("Gathering similar songs")
     all_data = converge_db.get_sorted_similars(title, artist)
-    print("Found {0} similar songs".format(len(all_data)))
+    # print("Found {0} similar songs".format(len(all_data)))
     if (len(all_data) < 5):
         print("Not enough, aborting")
         raise ValueError()
     if sim_limit and len(all_data) > sim_limit:
-        print("Reducing size to {0}".format(sim_limit))
+        # print("Reducing size to {0}".format(sim_limit))
         all_data = all_data[:sim_limit]
     all_data = (((title, artist), rating) for (title, artist, rating) in all_data)
     similars, ratings = zip(*all_data)
     similar_indexes = dict((value, i) for (i, value) in enumerate(similars))
 
-    print("Creating the similarity matrix")
+    # print("Creating the similarity matrix")
     # Create the default values
-    similarity_matrix = [[0 if i==j else 0.5 for j in range(len(similars))] for i in range(len(similars))]
+    similarity_matrix = [[0 if i == j else 0.5 for j in range(len(similars))] for i in range(len(similars))]
     for (i, (sim_title, sim_artist)) in enumerate(similars):
         # print("On song {0}/{1}".format(i+1, len(similars)))
         for (other_title, other_artist, other_similarity) in filter(lambda tas: tuple(tas[:2]) in similar_indexes.keys(), converge_db.get_sorted_similars(sim_title, sim_artist)):

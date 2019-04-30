@@ -7,86 +7,9 @@ import lastfm_api
 import time
 
 # Constants
-dbfile = 'lastfm_similars.db'
-
-example_tracks = [
-    "TRAWOYD128F4215DDD",
-    "TRLMKTL128F429D8D5"
-]
-example_track = example_tracks[0]
-
 non_uniques = [
 ]
 
-def format_data(data, num_elements=2):
-    # Unformats the data from a string
-    result = data.split(',')
-    is_digits = [True] * num_elements
-    for i in range(num_elements):
-        try:
-            float(result[i])
-        except ValueError:
-            is_digits[i] = False
-    return list(zip(*
-        (
-        list(map(float, result[i::num_elements])) if is_digits[i] else result[i::num_elements]
-        for i in range(num_elements)
-        )
-    ))
-
-class db:
-    def __init__(self):
-        self.conn = sq3.connect(dbfile)
-        self.c = self.conn.cursor()
-
-    def get_similars(self, track_id):
-        # Gets all similar track_ids, and values, of a track_id
-        self.c.execute("SELECT target FROM similars_src WHERE tid=?", (track_id,))
-        result = self.c.fetchone()
-        if not result:
-            return list()
-        return format_data(result[0])
-
-    def sorted_similars(self, track_id):
-        return sorted(self.get_similars(track_id), key=lambda x: x[1], reverse=True)
-
-    def get_reverse_similar(self, track_id):
-        # Gets all tracks to which track_id is similar
-        self.c.execute("SELECT target FROM similars_dest WHERE tid=?", (track_id,))
-        return format_data(self.c.fetchone()[0])
-
-    def get_songs_with_similar(self):
-        self.c.execute("SELECT DISTINCT tid FROM similars_dest")
-        yield from list(self.c)
-
-    def get_ordered_similar(self, track_id):
-        self.c.execute("SELECT target FROM similars_dest WHERE tid=?", (track_id,))
-        return sorted(format_data(self.c.fetchone()[0]), key=lambda x: x[1], reverse=True)
-
-class TrackReader:
-    def __init__(self):
-        self.conn = sq3.connect('track_names.db')
-        self.c = self.conn.cursor()
-
-    def get_song(self, track_id):
-        self.c.execute("SELECT title, artist FROM track_song WHERE track_id = ?", (track_id,))
-        return self.c.fetchall()
-
-    def get_track_ids(self, title=None, artist=None):
-        temp_c = self.conn.cursor()
-        if title is None and artist is None:
-            raise ValueError()
-        elif artist is None:
-            temp_c.execute("SELECT track_id FROM track_song WHERE title = ?", (title,))
-        elif title is None:
-            temp_c.execute("SELECT track_id FROM track_song WHERE artist = ?", (artist,))
-        else:
-            temp_c.execute("SELECT track_id FROM track_song WHERE title = ? AND artist = ?", (title, artist))
-        yield from (track_id for (track_id,) in temp_c)
-
-    def get_artists(self, title):
-        temp_c = self.conn.cursor()
-        yield from (artist for (artist,) in temp_c.execute("SELECT artist FROM track_song WHERE title = ?", (title,)))
 
 class converge_db:
     def __init__(self):
@@ -95,7 +18,11 @@ class converge_db:
         self.conn = sq3.connect(self.db_name)
         self.c = self.conn.cursor()
         self.create_tables()
-        self.next_simple_id = (self.c.execute("SELECT MAX(simple_id) FROM simple_song_id").fetchone())[0]+1
+        self.next_simple_id = self.c.execute("SELECT MAX(simple_id) FROM simple_song_id").fetchone()
+        if self.next_simple_id is None:
+            self.next_simple_id = 1
+        else:
+            self.next_simple_id = self.next_simple_id[0] + 1
 
     def read_schema(self):
         with open(self.db_schema) as f:
@@ -110,6 +37,7 @@ class converge_db:
         self.conn.commit()
 
     def _validate_pairs(self):
+        from legacy_importer import TrackReader
         TR = TrackReader()
         all_songs = list(set(TR.c.execute("SELECT title, artist FROM track_song")))
         # print(len(all_songs))
@@ -125,9 +53,6 @@ class converge_db:
 
     def all_song_data(self):
         temp_cursor = self.conn.cursor()
-        # sorted
-        # temp_cursor.execute("SELECT title, artist FROM simple_song_id ORDER BY artist, title")
-        # return list(temp_cursor.fetchall())
         temp_cursor.execute("SELECT title, artist FROM simple_song_id")
         yield from temp_cursor
 
@@ -143,7 +68,7 @@ class converge_db:
             WHERE title = ? AND artist = ?
             """, (title, artist)
         )
-        list((tid for (tid,) in temp_cursor))
+        list(tid for (tid,) in temp_cursor)
 
     def get_simple_from_title_artist(self, title, artist=None):
         if artist is not None:
@@ -174,6 +99,7 @@ class converge_db:
             )
         """)
         temp_cursor = self.conn.cursor()
+        from legacy_importer import db
         similarity_database = db()
         last_simple_id = None
         cur_tids = list()
@@ -227,7 +153,7 @@ class converge_db:
         # Just get good values
         return [(t, a, sim) for (t, a, sim) in self.c if sim]
 
-    def add_from_lastfm(self, title, artist, commit=False):
+    def add_from_lastfm(self, title, artist, *, commit=False):
         """
         Grabs the song similarity information from last_fm and uses it to update the database
         Returns the list of similar songs to use (if it doesn't call, it doesn't worry about it either)
@@ -296,77 +222,5 @@ def _add_popular(C):
 
 if __name__ == '__main__':
     C = converge_db()
-    # add_popular(C)
+    _add_popular(C)
     # C.fix_non_uniques()
-    C.c.execute("SELECT simple_id FROM simple_song_id WHERE ")
-
-
-    # print(sum(1 for _ in C.c.execute("SELECT track_id FROM simple_track_id")))
-    # 839122 lines
-    # ~ 766100 simple_ids
-    # ~ 75000 dups
-
-    # C.merge_similars()
-    # exit()
-    # sid = C.get_simple_id("Born To Be Wild")[0]
-    # print(sid)
-    # C.c.execute("SELECT * FROM simple_similars")
-    # for item in C.c:
-    #     print(item)
-    # Get the similarities for this, by title
-    # C.c.execute("SELECT title, artist, similarity FROM simple_similars INNER JOIN simple_song_id ON simple_id_other = simple_id WHERE simple_id_orig = ?", (sid,))
-    # print("\n".join("Similarity {0} on {1} by {2}".format(round(similarity, 4)*100, title, artist) for (title, artist, similarity) in C.c))
-
-    # all_songs = list(C.all_song_data())
-    # print(len(all_songs))
-    # print(len(set(all_songs)))
-
-    # Want to see if simple_song_id is a unique identifier
-
-    # C.validate_pairs()
-    # exit()
-
-    # Dup analysis
-    # TR = TrackReader()
-    # pop_song = TR.get_song('TRAWOYD128F4215DDD')[0]
-    # print(pop_song)
-    # track_ids = list(TR.get_track_ids(*pop_song))
-    # # print(list(track_ids))
-    # print('\n'.join(track_ids))
-    # # Do some cross anaylsis to see what the duplicates are
-    # print("Now checking all dups")
-    # D = db()
-    # all_similars = list()
-    # best_match = set()
-    # # First organize each track_ids similars into the same batch
-    # for track_id in track_ids:
-    #     print(track_id, TR.get_song(track_id)[0])
-    #     similars = D.get_similars(track_id)
-    #     if len(set(similars)) > len(best_match):
-    #         best_match = similars
-    #     all_similars.extend(similars)
-    # # Determine if there is any clashing across the various (id, rating) pairs
-    # tid_values = dict()
-    # for (tid, value) in all_similars:
-    #     tid_values[tid] = tid_values.get(tid, list())
-    #     tid_values[tid].append(value)
-    # good_count = 0
-    # for (tid, values) in tid_values.items():
-    #     if not len(set(values)) == 1:
-    #         print(tid, values)
-    #     else:
-    #         good_count+=1
-    # # The number of clashed pairs
-    # print("Good: {0}, bad: {1}".format(good_count, len(tid_values) - good_count))
-    #
-    # # Check to see if the biggest is the superset of the other sets
-    # best_match = set(best_match)
-    # not_in_best = set(all_similars).difference(best_match)
-    # print(len(not_in_best), not_in_best)
-
-
-    # D.c.execute("SELECT target FROM similars_src WHERE tid=?", (example_track,))
-    # print(D.c.fetchone()[0])
-    # print(D.get_similars(example_track,))
-    # D.c.execute("SELECT COUNT(target) FROM similars_src")
-    # print(D.c.fetchone())

@@ -3,6 +3,7 @@ A file for managing any last_fm calls
 """
 # imports
 import requests
+import time
 
 # constants
 api_key = "a7dd7b2ec7530f54b6873584c8b87621"
@@ -13,6 +14,7 @@ request_headers = {
     'User-Agent': popular_user_agent
 }
 request_endpoint = "http://ws.audioscrobbler.com/2.0/"
+wait_time = 1  # Seconds between request calls
 
 """
 Similar json format:
@@ -53,6 +55,7 @@ def track_similars(title, artist, limit=None):
     }
     if limit:
         data["limit"] = limit
+    time.sleep(1)
     resp = requests.get(url=request_endpoint, headers=request_headers, data=data)
     j = resp.json()
     return j
@@ -80,8 +83,8 @@ def read_sim_track_json(track_dict):
 
 def run_tests():
     test_title, test_artist = (
-        "Lone Digger",
-        "Caravan Palace"
+        "",
+        ""
     )
     j = track_similars(test_title, test_artist, 10)
     print(j)
