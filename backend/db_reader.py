@@ -164,6 +164,7 @@ class converge_db:
         if self.c.execute("SELECT simple_id_orig FROM simple_similars WHERE simple_id_orig = ?", (sid,)).fetchone():
             print("Already added song {0} by {1}".format(title, artist))
             return list()
+        # if commit:
         print("Adding song {0} by {1}".format(title, artist))
         j = lastfm_api.track_similars(title, artist)
         # fixed_attributes = j['similartracks'].get('@attr', dict())
@@ -186,8 +187,8 @@ class converge_db:
     def add_all_sim_lastfm(self, title, artist):
         for (i, (other_title, other_artist, other_sim)) in enumerate(map(lastfm_api.read_sim_track_json, self.add_from_lastfm(title, artist))):
             # For now, make sure we don't call the service too many times/second
-            if i%5 == 0:
-                print("{0}/100% complete ", end="")
+            if i % 5 == 0:
+                print("{0}% complete ".format(i*2))
             self.add_from_lastfm(other_title, other_artist)
         self.conn.commit()
 

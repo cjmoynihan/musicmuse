@@ -1,3 +1,4 @@
+#!/Users/cj/anaconda3/bin/python
 """
 TODO:
 Create angles using the amount of simlarity between clusters
@@ -23,10 +24,11 @@ import json
 import math
 from itertools import islice, permutations, chain, product
 import os
+import sys
 
 # Constants
 converge_db = db_reader.converge_db()
-color_similarity_threshold = 0.70
+color_similarity_threshold = 0.75
 legend_position = 7/4 * math.pi
 # no_data_similarity = 0.5
 no_data_similarity = 0
@@ -40,7 +42,7 @@ def get_similarity_matrix_by_title_artist(title, artist, *, sim_limit=50):
         print("Not enough, aborting")
         raise ValueError()
     if sim_limit and len(all_data) > sim_limit:
-        # print("Reducing size to {0}".format(sim_limit))
+        print("Reducing size to {0}".format(sim_limit))
         all_data = all_data[:sim_limit]
     all_data = (((title, artist), rating) for (title, artist, rating) in all_data)
     similars, ratings = zip(*all_data)
@@ -83,6 +85,7 @@ def n_clustering(sim_matrix, similar_song_data, similar_ratings, *, num_clusters
     clusters = [cluster[:top_size] for cluster in clusters]
     # Get the average distance from the song to the center
     center_distance = [sum((1 - rating_by_song_data[song_data]) for song_data in cluster)/len(cluster) for cluster in clusters]
+    clusters, center_distance = zip(*sorted(zip(clusters, center_distance), key=lambda x: x[1]))
     # Get the cluster to cluster distance
     # print("Calculating cluster co-similarity")
     cluster_similarity = np.matrix([[(None if i == j else 0.5) for j in range(len(clusters))] for i in range(len(clusters))])
@@ -139,7 +142,7 @@ def get_angles_from_clusters(clusters, center_distances, cosimilarity):
     # Not sure how to do non-trivial method
     def ordering_pushback(ordering):
         for ndx1, ndx2 in chain(zip(ordering, ordering[1:]), ((ordering[-1], ordering[0]),)):
-            yield cosimilarity[ndx1, ndx2]
+            yield (cosimilarity[ndx1, ndx2] + 0.10)
 
     def score_ordering(ordering):
         return sum(ordering_pushback(ordering))
@@ -156,6 +159,10 @@ def get_angles_from_clusters(clusters, center_distances, cosimilarity):
     pushbacks = list(ordering_pushback(best_ordering))
     # Use the sum of all relative spacing to determine the allowed spacing
     total_pushback = sum(pushbacks)
+    # print("Indv. pushbacks", pushbacks)
+    # print("Total pushback", total_pushback)
+    # pushbacks = [min(pushback, total_pushback / 15) for pushback in pushbacks]
+    # total_pushback = sum(pushbacks)
     for pushback in pushbacks[:-1]:
         # Each node is pushed equal to its relative spacing * (2pi / relative space reserved)
         angles.append(angles[-1] + pushback * 2 * math.pi / total_pushback)
@@ -195,7 +202,7 @@ def fix_ordering(ordering, items):
 
 basic_json_filepath = ('jsons/', '.json')
 title_artist_separator = ' '
-def create_json(title, artist, *, num_clusters = 5, top_size = 20):
+def create_json(title, artist, *, num_clusters = 5, top_size = 20, fake_out=False):
     clustering, cluster_sims = cluster_by_title_artist(title, artist, num_clusters=num_clusters, top_size=top_size)
     clusters, center_distances = zip(*clustering)
     ordering, angles, colors = get_angles_from_clusters(clusters, center_distances, cluster_sims)
@@ -212,10 +219,11 @@ def create_json(title, artist, *, num_clusters = 5, top_size = 20):
             "color": color
         }
         json_obj.append(cluster_dict)
-    for json_filepath in (basic_json_filepath, ('../front-end/songjson/', '.json')):
-        with open("{0}{1}{2}{3}{4}".format(json_filepath[0], title.replace('/', ''), title_artist_separator, artist.replace('/', ''), json_filepath[1]), 'w') as f:
-            json.dump(json_obj, f)
-    print("Finished json {0}, {1}".format(title, artist))
+    if not fake_out:
+        for json_filepath in (basic_json_filepath, ('../front-end/songjson/', '.json')):
+            with open("{0}{1}{2}{3}{4}".format(json_filepath[0], title.replace('/', ''), title_artist_separator, artist.replace('/', ''), json_filepath[1]), 'w') as f:
+                json.dump(json_obj, f)
+        print("Finished json: {0}, {1}".format(title, artist))
 
 def test_jsons():
     os.makedirs("jsons")
@@ -280,15 +288,32 @@ def json_all_modern():
         title, artist = converge_db.c.execute("SELECT title, artist FROM simple_song_id WHERE simple_id = ?", new_sid).fetchone()
         create_json(title, artist)
 
-def make_json_from_anywhere(title, artist, *, num_clusters = 5, top_size=50):
+def make_json_from_anywhere(title, artist, *, num_clusters = 5, top_size=None):
+    title, artist = title.lower(), artist.lower()
     converge_db.add_all_sim_lastfm(title, artist)
-    create_json(title, artist, num_clusters = num_clusters, top_size=top_size)
+    create_json(title, artist, num_clusters=num_clusters, top_size=top_size)
 
+def add_many_songs(artist, *, num_songs=None, num_clusters=5, top_size=None):
+    for (i, (title, *_)) in enumerate(lastfm_api.get_top_songs(artist)):
+        if i == num_songs:
+            print("Finished creating songs")
+            break
+        try:
+            make_json_from_anywhere(title, artist, num_clusters=num_clusters, top_size=top_size)
+        except ValueError:
+            print("Not enough data to add song {0} by {1}".format(title, artist))
+            pass
 
 if __name__ == "__main__":
-    # test_jsons()
-    # test_clustering()
-    # create_json(*('Green, Green Grass of Home', 'Porter Wagoner'))
-    # add_all_songs()
-    # json_all_modern()
-    make_json_from_anywhere("Africa", "Toto")
+    if len(sys.argv) >= 3:
+        if sys.argv[2].isdigit():
+            filename, artist, num_songs, *_ = sys.argv
+            num_songs = int(num_songs)
+            add_many_songs(artist, num_songs=num_songs)
+        else:
+            filename, title, artist, *_ = sys.argv
+            make_json_from_anywhere(title, artist)
+    elif len(sys.argv) == 2:
+        filename, artist = sys.argv
+        add_many_songs(artist)
+

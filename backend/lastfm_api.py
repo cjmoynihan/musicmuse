@@ -55,7 +55,7 @@ class DelayedApiCalls(Thread):
                 raise ValueError()
 
 
-def track_similars(title, artist, *, limit=None, use_threading=False):
+def track_similars(title, artist, *, limit=50, use_threading=False):
     """
     Queries the lastfm database to get the similar music data for a given title and artist
     If limit is provided, it will get no more than limit results
@@ -89,6 +89,18 @@ def _get_popular():
     j = resp.json()
     return j
 
+def get_top_songs(artist):
+    data = {
+        "method": "artist.getTopTracks",
+        "api_key": api_key,
+        "format": "json",
+        "artist": artist
+    }
+    time.sleep(1)
+    resp = requests.get(url=request_endpoint, headers=request_headers, data=data)
+    j = resp.json()
+    yield from map(read_sim_track_json, j["toptracks"]["track"])
+
 def get_popular():
     j = _get_popular()
     return list(map(read_sim_track_json, j["tracks"]["track"]))
@@ -96,7 +108,7 @@ def get_popular():
 def read_sim_track_json(track_dict):
     other_title = track_dict['name']
     other_artist = track_dict['artist']['name']
-    other_sim = track_dict.get('match', 0.5)
+    other_sim = track_dict.get('match', 0)
     return (other_title.lower(), other_artist.lower(), other_sim)
 
 def run_tests():
