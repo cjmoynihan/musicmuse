@@ -4,6 +4,7 @@ A file for managing any last_fm calls
 # imports
 import requests
 import time
+from threading import Thread, Event
 
 # constants
 api_key = "a7dd7b2ec7530f54b6873584c8b87621"
@@ -40,11 +41,26 @@ similartracks: {
 }
 """
 
-def track_similars(title, artist, limit=None):
+# Threading class
+class DelayedApiCalls(Thread):
+    def __init__(self, iterator_of_title_artists):
+        Thread.__init__(self)
+        self.song_data = iterator_of_title_artists
+        self.stopped = Event()
+
+    def run(self):
+        for (title, artist) in self.song_data:
+            while not self.stopped.wait(1):
+                # do thing w/ title and artist
+                raise ValueError()
+
+
+def track_similars(title, artist, *, limit=None, use_threading=False):
     """
     Queries the lastfm database to get the similar music data for a given title and artist
     If limit is provided, it will get no more than limit results
     """
+    title, artist = title.lower(), artist.lower()
     data = {
         "method": "track.getsimilar",
         "artist": artist,
@@ -55,7 +71,8 @@ def track_similars(title, artist, limit=None):
     }
     if limit:
         data["limit"] = limit
-    time.sleep(1)
+    if not use_threading:
+        time.sleep(1)
     resp = requests.get(url=request_endpoint, headers=request_headers, data=data)
     j = resp.json()
     return j
@@ -67,6 +84,7 @@ def _get_popular():
         "api_key": api_key,
         "format": "json"
     }
+    time.sleep(1)
     resp = requests.get(url=request_endpoint, headers=request_headers, data=data)
     j = resp.json()
     return j
@@ -79,7 +97,7 @@ def read_sim_track_json(track_dict):
     other_title = track_dict['name']
     other_artist = track_dict['artist']['name']
     other_sim = track_dict.get('match', 0.5)
-    return (other_title, other_artist, other_sim)
+    return (other_title.lower(), other_artist.lower(), other_sim)
 
 def run_tests():
     test_title, test_artist = (

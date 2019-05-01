@@ -21,19 +21,22 @@ import numpy as np
 from sklearn.cluster import SpectralClustering
 import json
 import math
-from itertools import islice, permutations, chain
+from itertools import islice, permutations, chain, product
 import os
 
 # Constants
 converge_db = db_reader.converge_db()
 color_similarity_threshold = 0.70
 legend_position = 7/4 * math.pi
+# no_data_similarity = 0.5
+no_data_similarity = 0
 
-def get_similarity_matrix_by_title_artist(title, artist, sim_limit=50):
+
+def get_similarity_matrix_by_title_artist(title, artist, *, sim_limit=50):
     # print("Gathering similar songs")
     all_data = converge_db.get_sorted_similars(title, artist)
     # print("Found {0} similar songs".format(len(all_data)))
-    if (len(all_data) < 5):
+    if len(all_data) < 5:
         print("Not enough, aborting")
         raise ValueError()
     if sim_limit and len(all_data) > sim_limit:
@@ -45,16 +48,25 @@ def get_similarity_matrix_by_title_artist(title, artist, sim_limit=50):
 
     # print("Creating the similarity matrix")
     # Create the default values
-    similarity_matrix = [[0 if i == j else 0.5 for j in range(len(similars))] for i in range(len(similars))]
+    similarity_matrix = [
+        [0 if i == j else no_data_similarity for j in range(len(similars))]
+        for i in range(len(similars))
+    ]
     for (i, (sim_title, sim_artist)) in enumerate(similars):
         # print("On song {0}/{1}".format(i+1, len(similars)))
         for (other_title, other_artist, other_similarity) in filter(lambda tas: tuple(tas[:2]) in similar_indexes.keys(), converge_db.get_sorted_similars(sim_title, sim_artist)):
             similarity_matrix[i][similar_indexes[(other_title, other_artist)]] = 1 - other_similarity
-    print("Finished creating similarity matrix")
-    print("Similarity matrix size: {0} by {1}".format(len(similarity_matrix), len(similarity_matrix[0])))
+    # print("Finished creating similarity matrix")
+    # print("Similarity matrix size: {0} by {1}".format(len(similarity_matrix), len(similarity_matrix[0])))
     return np.matrix(similarity_matrix), similars, ratings
 
-def n_clustering(sim_matrix, similar_song_data, similar_ratings, num_clusters=5, top_size=20):
+
+def n_clustering(sim_matrix, similar_song_data, similar_ratings, *, num_clusters=5, top_size=20):
+    """
+    sim_matrix is a matrix of similarities between the songs
+    similar_song_data is an iterator of (title, artist) values
+    similar_ratings is an iterator of similarity ratings
+    """
     # Determine which cluster to place things in
     clustering_results = SpectralClustering(num_clusters).fit_predict(sim_matrix)
 
@@ -62,7 +74,7 @@ def n_clustering(sim_matrix, similar_song_data, similar_ratings, num_clusters=5,
     clusters = [list() for _ in range(num_clusters)]
     for (i, ((title, artist), cluster_num)) in enumerate(zip(similar_song_data, clustering_results), 1):
         clusters[cluster_num].append((title, artist))
-    print("Finished clustering")
+    # print("Finished clustering")
 
     rating_by_song_data = {song_data: rating for (song_data, rating) in zip(similar_song_data, similar_ratings)}
 
@@ -72,7 +84,7 @@ def n_clustering(sim_matrix, similar_song_data, similar_ratings, num_clusters=5,
     # Get the average distance from the song to the center
     center_distance = [sum((1 - rating_by_song_data[song_data]) for song_data in cluster)/len(cluster) for cluster in clusters]
     # Get the cluster to cluster distance
-    print("Calculating cluster co-similarity")
+    # print("Calculating cluster co-similarity")
     cluster_similarity = np.matrix([[(None if i == j else 0.5) for j in range(len(clusters))] for i in range(len(clusters))])
     song_indexes = {song_data: i for (i, song_data) in enumerate(similar_song_data)}
     for cluster1_ndx, cluster1 in enumerate(clusters):
@@ -94,14 +106,14 @@ def n_clustering(sim_matrix, similar_song_data, similar_ratings, num_clusters=5,
             # cluster_sim = sum(sim_matrix[song_indexes[song1]][song_indexes[song2]] for song2 in cluster2 for song1 in cluster1) / (len(cluster1) * len(cluster2))
             cluster_similarity[cluster1_ndx, cluster2_ndx] = cluster_sim
             # cluster_similarity[cluster2_ndx][cluster1_ndx] = cluster_sim
-    print("Finished calculating co-similarity")
+    # print("Finished calculating co-similarity")
     # Combine the responses
     return list(zip(clusters, center_distance)), cluster_similarity
 
-def cluster_by_title_artist(title, artist, num_clusters=5, top_size=20):
+def cluster_by_title_artist(title, artist, *, num_clusters=5, top_size=20):
     # Collect the data
     sim_matrix, similars, ratings = get_similarity_matrix_by_title_artist(title, artist)
-    return n_clustering(sim_matrix, similars, ratings, num_clusters, top_size)
+    return n_clustering(sim_matrix, similars, ratings, num_clusters=num_clusters, top_size=top_size)
 
 def get_angles_from_clusters(clusters, center_distances, cosimilarity):
     """
@@ -110,12 +122,10 @@ def get_angles_from_clusters(clusters, center_distances, cosimilarity):
     If their similarity is 0.5, they should be evenly spaced
     If their similarity is high, instead push everything away then adjust for their co-similarity
     If their similarity is low, instead super group together
-    TODO: decide whether to trust close or far choices?
-    TODO: assign color with (within a certain similarity = same color) (give smaller size lightest, to largest size darkest)
     """
     # Give priority to the ones that are farther away
     # Remember, 0 = far and dissimilar here, 1 = close and similar here
-    print("Assigning angles and colors")
+    # print("Assigning angles and colors")
     cluster_ordering = sorted(range(len(center_distances)), key=lambda i: center_distances[i])
     for ndx_1 in cluster_ordering:
         for ndx_2 in cluster_ordering[ndx_1+1:]:
@@ -130,9 +140,11 @@ def get_angles_from_clusters(clusters, center_distances, cosimilarity):
     def ordering_pushback(ordering):
         for ndx1, ndx2 in chain(zip(ordering, ordering[1:]), ((ordering[-1], ordering[0]),)):
             yield cosimilarity[ndx1, ndx2]
+
     def score_ordering(ordering):
         return sum(ordering_pushback(ordering))
-    best_ordering = list(min(permutations(range(5)), key=score_ordering))
+
+    best_ordering = list(min(permutations(range(len(clusters))), key=score_ordering))
 
     # Create angles and colors
     angles = list()
@@ -181,9 +193,9 @@ def fix_ordering(ordering, items):
     items.sort(key=lambda i_item: ordering[i_item[0]])
     return [item for (i, item) in items]
 
-json_filepath = ('jsons/', '.json')
+basic_json_filepath = ('jsons/', '.json')
 title_artist_separator = ' '
-def create_json(title, artist, num_clusters = 5, top_size = 20):
+def create_json(title, artist, *, num_clusters = 5, top_size = 20):
     clustering, cluster_sims = cluster_by_title_artist(title, artist, num_clusters=num_clusters, top_size=top_size)
     clusters, center_distances = zip(*clustering)
     ordering, angles, colors = get_angles_from_clusters(clusters, center_distances, cluster_sims)
@@ -200,8 +212,10 @@ def create_json(title, artist, num_clusters = 5, top_size = 20):
             "color": color
         }
         json_obj.append(cluster_dict)
-    with open("{0}{1}{2}{3}{4}".format(json_filepath[0], title.replace('/', ''), title_artist_separator, artist.replace('/', ''), json_filepath[1]), 'w') as f:
-        json.dump(json_obj, f)
+    for json_filepath in (basic_json_filepath, ('../front-end/songjson/', '.json')):
+        with open("{0}{1}{2}{3}{4}".format(json_filepath[0], title.replace('/', ''), title_artist_separator, artist.replace('/', ''), json_filepath[1]), 'w') as f:
+            json.dump(json_obj, f)
+    print("Finished json {0}, {1}".format(title, artist))
 
 def test_jsons():
     os.makedirs("jsons")
@@ -266,9 +280,15 @@ def json_all_modern():
         title, artist = converge_db.c.execute("SELECT title, artist FROM simple_song_id WHERE simple_id = ?", new_sid).fetchone()
         create_json(title, artist)
 
+def make_json_from_anywhere(title, artist, *, num_clusters = 5, top_size=50):
+    converge_db.add_all_sim_lastfm(title, artist)
+    create_json(title, artist, num_clusters = num_clusters, top_size=top_size)
+
+
 if __name__ == "__main__":
     # test_jsons()
     # test_clustering()
     # create_json(*('Green, Green Grass of Home', 'Porter Wagoner'))
     # add_all_songs()
-    json_all_modern()
+    # json_all_modern()
+    make_json_from_anywhere("Africa", "Toto")

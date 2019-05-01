@@ -18,11 +18,11 @@ class converge_db:
         self.conn = sq3.connect(self.db_name)
         self.c = self.conn.cursor()
         self.create_tables()
-        self.next_simple_id = self.c.execute("SELECT MAX(simple_id) FROM simple_song_id").fetchone()
+        self.next_simple_id = self.c.execute("SELECT MAX(simple_id) FROM simple_song_id").fetchone()[0]
         if self.next_simple_id is None:
             self.next_simple_id = 1
         else:
-            self.next_simple_id = self.next_simple_id[0] + 1
+            self.next_simple_id = self.next_simple_id + 1
 
     def read_schema(self):
         with open(self.db_schema) as f:
@@ -147,6 +147,7 @@ class converge_db:
         INNER JOIN simple_song_id
         ON simple_id_other = simple_id
         WHERE simple_id_orig = ?
+        AND simple_id_other IS NOT NULL
         ORDER BY similarity DESC
         """, (orig_sid,))
         # return self.c.fetchall()
@@ -169,7 +170,10 @@ class converge_db:
         # title = fixed_attributes.get(title, title)
         # artist = fixed_attributes.get(artist, artist)
         all_similar_details = j['similartracks'].get('track', list())
-        print("Recieved {0} similar songs".format(len(all_similar_details)))
+        if commit:
+            print("Recieved {0} similar songs".format(len(all_similar_details)))
+        if len(all_similar_details) == 0:
+            self.c.execute("INSERT INTO simple_similars(simple_id_orig) VALUES(?)", (sid,))
         for track_dict in all_similar_details:
             other_title, other_artist, other_sim = lastfm_api.read_sim_track_json(track_dict)
             # Check to see if song exists
@@ -180,9 +184,10 @@ class converge_db:
         return all_similar_details
 
     def add_all_sim_lastfm(self, title, artist):
-        for (other_title, other_artist, other_sim) in map(lastfm_api.read_sim_track_json, self.add_from_lastfm(title, artist)):
+        for (i, (other_title, other_artist, other_sim)) in enumerate(map(lastfm_api.read_sim_track_json, self.add_from_lastfm(title, artist))):
             # For now, make sure we don't call the service too many times/second
-            time.sleep(1)
+            if i%5 == 0:
+                print("{0}/100% complete ", end="")
             self.add_from_lastfm(other_title, other_artist)
         self.conn.commit()
 
@@ -211,6 +216,10 @@ class converge_db:
         for (simple_id_orig, simple_id_other, similarity) in correct_values:
             self.c.execute("INSERT INTO simple_similars(simple_id_orig, simple_id_other, similarity) VALUES(?, ?, ?)", (simple_id_orig, simple_id_other, similarity))
         self.conn.commit()
+
+    def fix_and_get_sorted_similars(self, title, artist):
+        self.add_all_sim_lastfm(title, artist)
+        return self.get_sorted_similars(title, artist)
 
 
 def _add_popular(C):
