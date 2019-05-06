@@ -1,16 +1,12 @@
 """
-Home base for managing the databases of song data
+Handles the processing for storing and retrieving song data
 """
 # Imports
 import sqlite3 as sq3
 import lastfm_api
 import time
-import itertools
 
 # Constants
-non_uniques = [
-]
-
 
 class converge_db:
     def __init__(self):
@@ -37,41 +33,18 @@ class converge_db:
             self.c.execute(cmd)
         self.conn.commit()
 
-    def _validate_pairs(self):
-        from legacy_importer import TrackReader
-        TR = TrackReader()
-        all_songs = list(set(TR.c.execute("SELECT title, artist FROM track_song")))
-        # print(len(all_songs))
-        # data_to_add = list()
-        for (i, (title, artist)) in enumerate(all_songs):
-            if i % 7611 == 0:
-                print("{0} / 100".format(i / 7611))
-            track_ids = TR.c.execute("SELECT track_id FROM track_song WHERE title = ? AND artist = ?", (title, artist))
-            self.c.execute("INSERT INTO simple_song_id(simple_id, title, artist) VALUES(?, ?, ?)", (i, title, artist))
-            for (tid,) in track_ids:
-                self.c.execute("INSERT INTO simple_track_id(track_id, simple_id) VALUES(?, ?)", (tid, i))
-        self.conn.commit()
-
     def all_song_data(self):
+        """
+        Get all (title, artist) pairs
+        """
         temp_cursor = self.conn.cursor()
         temp_cursor.execute("SELECT title, artist FROM simple_song_id")
         yield from temp_cursor
 
-    def get_track_ids(self, title, artist):
-        temp_cursor = self.conn.cursor()
-        temp_cursor.execute(
-            """
-            SELECT track_id
-            FROM simple_song_id AS A
-            INNER JOIN
-            simple_track_id AS B
-            ON A.simple_id = B.simple_id
-            WHERE title = ? AND artist = ?
-            """, (title, artist)
-        )
-        list(tid for (tid,) in temp_cursor)
-
     def get_simple_from_title_artist(self, title, artist=None):
+        """
+        Queries the database for a title (and artist)
+        """
         if artist is not None:
             self.c.execute("SELECT simple_id FROM simple_song_id WHERE title = ? AND artist = ?", (title, artist))
             result = list(sid for (sid,) in self.c)
@@ -82,66 +55,22 @@ class converge_db:
             return None
         return list(result)
 
-    def get_simple_from_track(self, tid):
-        self.c.execute("SELECT simple_id FROM simple_track_id WHERE track_id = ?", (tid,))
-        result = self.c.fetchone()
-        if result is None:
-            return result
-        return result[0]
-
-    def _merge_similars(self):
-        # Create a similarity table for the simple_ids
-        self.c.execute("DROP TABLE IF EXISTS simple_similars")
-        self.c.execute("""
-            CREATE TABLE simple_similars(
-                simple_id_orig INT NOT NULL,
-                simple_id_other INT NOT NULL,
-                similarity REAL NOT NULL
-            )
-        """)
-        temp_cursor = self.conn.cursor()
-        from legacy_importer import db
-        similarity_database = db()
-        last_simple_id = None
-        cur_tids = list()
-        # First get the highest simple_id value
-        for (track_id, simple_id) in temp_cursor.execute("SELECT track_id, simple_id FROM simple_track_id ORDER BY simple_id"):
-            # Get the tids for each simple_id
-            # Guaranteed to not have any duplicates (each simple id is partition of track_ids)
-            if simple_id != last_simple_id:
-                # Get all of the similars, but fix the duplicate track_ids
-                similar_ratings = dict()
-                for self_tid in cur_tids:
-                    for (similar_tid, rating) in similarity_database.get_similars(self_tid):
-                        similar_simple_id = self.get_simple_from_track(similar_tid)
-                        if (similar_simple_id is not None):
-                            if similar_simple_id not in similar_ratings.keys():
-                                # Let's not worry about mismatches. Assume they're all the same
-                                # if similar_ratings[similar_simple_id] != rating:
-                                #     print("A mismatch!!")
-                                #     print("Orig song {1}")
-                                similar_ratings[similar_simple_id] = rating
-                # Add all of these to the simple database, then clear the saved material
-                for (other_simple_id, other_rating) in similar_ratings.items():
-                    self.c.execute("INSERT INTO simple_similars(simple_id_orig, simple_id_other, similarity) VALUES(?, ?, ?)", (last_simple_id, other_simple_id, other_rating))
-                last_simple_id = simple_id
-                cur_tids = list()
-                if last_simple_id % 7661 == 0:
-                    print("{0}/100 complete".format(last_simple_id / 7661))
-            cur_tids.append(track_id)
-        self.conn.commit()
-
     def get_sorted_similars(self, title, artist):
         """
-        Gets all the title, artist, similarity for a title sorted by similarity
+        Gets all (title, artist, similarity) for a (title, artist) sorted by similarity (highest -> lowest)
         """
-        orig_sid = self.get_simple_from_title_artist(title, artist)
-        if not orig_sid:
-            raise ValueError()
-        orig_sid = list(orig_sid)
-        if len(orig_sid) > 1 and artist is not None:
-            raise ValueError("Multiple simple ids for title {0}, artist {1}, with sids {2}".format(title, artist, orig_sid))
-        orig_sid = orig_sid[0]
+        simple_ids = self.get_simple_from_title_artist(title, artist)
+        if not simple_ids:
+            raise ValueError("There are no songs stored for (title, artist):\n({0}, {1})".format(title, artist))
+        simple_ids = list(simple_ids)
+
+        # Might as well do a duplicate check here
+        if len(simple_ids) > 1 and artist is not None:
+            raise RuntimeWarning("There are multiple simple_ids for (title, artist):\n({0}, {1})".format(title, artist))
+        simple_id = simple_ids[0]
+
+        # simple_id_other -> NULL for cases where there are no similar songs
+        # This is to prevent constant lookups for songs that have already been discovered
         self.c.execute("""
         SELECT title, artist, similarity
         FROM simple_similars
@@ -150,10 +79,8 @@ class converge_db:
         WHERE simple_id_orig = ?
         AND simple_id_other IS NOT NULL
         ORDER BY similarity DESC
-        """, (orig_sid,))
-        # return self.c.fetchall()
-        # Just get good values
-        return [(t, a, sim) for (t, a, sim) in self.c if sim]
+        """, (simple_id,))
+        return [(other_title, other_artist, similarity) for (other_title, other_artist, similarity) in self.c if similarity]
 
     def add_from_lastfm(self, title, artist, *, commit=False):
         """
