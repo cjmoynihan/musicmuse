@@ -86,7 +86,7 @@ def track_similars(title, artist, *, limit=None, last_call=False):
         wait_time = 1 - (time.time() - previous_calls[0])
         wait_time = max([wait_time, 0])
         time.sleep(wait_time)
-    resp = requests.get(url=request_endpoint, headers=request_headers, data=data)
+    resp = requests.get(url=request_endpoint, headers=request_headers, params=data)
     previous_calls[0] = time.time()
     j = resp.json()
     return j
@@ -99,7 +99,7 @@ def _get_popular():
         "format": "json"
     }
     time.sleep(1)
-    resp = requests.get(url=request_endpoint, headers=request_headers, data=data)
+    resp = requests.get(url=request_endpoint, headers=request_headers, params=data)
     j = resp.json()
     return j
 
@@ -111,11 +111,11 @@ def get_top_songs(artist):
         "artist": artist
     }
     time.sleep(1)
-    # For some reason, data call stopped working
-    # resp = requests.get(url=request_endpoint, headers=request_headers, data=data)
+    # Originally call wasn't working because I was using data as an endpoint instead data
+    resp = requests.get(url=request_endpoint, headers=request_headers, params=data)
     # Simple work around:
-    request_and_data = request_endpoint + '?' + urllib.parse.urlencode(data)
-    resp = requests.get(url=request_and_data, headers=request_headers)
+    # request_and_data = request_endpoint + '?' + urllib.parse.urlencode(data)
+    # resp = requests.get(url=request_and_data, headers=request_headers)
     j = resp.json()
     yield from map(read_sim_track_json, j["toptracks"]["track"])
 
@@ -131,10 +131,10 @@ def read_sim_track_json(track_dict):
 
 def run_tests():
     test_title, test_artist = (
-        "",
-        ""
+        "Don't stop believin'",
+        "Journey"
     )
-    j = track_similars(test_title, test_artist, 10)
+    j = track_similars(test_title, test_artist)
     print(j)
 
 if __name__ == "__main__":

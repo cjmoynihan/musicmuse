@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS simple_song_id(
 	artist TEXT COLLATE NOCASE NOT NULL
 );
 CREATE INDEX IF NOT EXISTS song_data_ndx ON simple_song_id (title, artist, simple_id);
-CREATE INDEX IF NOT EXISTS track_ndx ON simple_track_id (simple_id, track_id);
 CREATE TABLE IF NOT EXISTS simple_similars(
 	simple_id_orig INT NOT NULL,
 	simple_id_other INT,

@@ -2,14 +2,27 @@
 """
 A file for managing all the clustering aspects
 ----------------
-TODO:
-Chain to grab more values
-Use two hop rule: (if a -> b w/ x% chance and b -> c w/ y% chance, (x+y-1) <= (a -> c) <= min(x, y)
-    if x and y are independent, it is exactly x * y
-Have to figure out how to deal with reverse similarity:
-    If 90% of fringe song like popular song, but 5% of popular song like fringe song,
-        then num_pop * .05 = num_fringe*.9 -> num_fringe = 1/18 * num_pop, num_pop = 18*num_fringe
-    Can extrapolate relative size using two-way
+Other features to add:
+* Use two-hops functions
+* Use approximation rule if not enough similars:
+    * Grab songs similar to similars
+    * Grab other songs of the same artist
+* Have to figure out how to deal with reverse similarity:
+    * If 90% of fringe song like popular song, but 5% of popular song like fringe song,
+        * then num_pop * .05 = num_fringe*.9 -> num_fringe = 1/18 * num_pop, num_pop = 18*num_fringe
+    * Could extrapolate relative size to original and normalize all similarities to number of people that like both
+        * Given that a->b describes the likelihood of b given a
+        * Given o is the original song, and a and b are two similar songs
+        * Find k for |a| * k = |b|
+        * if a->b:
+            * |a| * (a->b) / (b->a) = |b|
+        * else:
+            * |a| * (a->o) / (o->a) * (o->b) / (b->o) = |b|
+* Create spotify playlist
+    * Play all the songs in a cluster without needing to click each
+    * Add them to the user
+* Automatically determine the number of clusters. Maybe use elbow or eigengap methods?
+    * Deterine the 'rating' of a cluster
 """
 
 # Imports
@@ -217,6 +230,9 @@ def create_json(title, artist, *, num_clusters = None, top_size = 20, fake_out=F
     clusters, center_distances = zip(*clustering)
     ordering, angles, colors = get_angles_from_clusters(clusters, center_distances, cluster_sims)
     clustering = fix_ordering(ordering, clustering)
+    print("Cluster sizes:")
+    cluster_sizes = sorted(len(cluster) for (cluster, distance) in clustering)
+    print(', '.join(map(str, cluster_sizes)))
     # Create the json representation
     json_obj = list()
     for (i, ((cluster, center_distance), angle, color)) in enumerate(zip(clustering, angles, colors)):
