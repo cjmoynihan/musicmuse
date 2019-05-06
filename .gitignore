@@ -154,3 +154,4 @@ fabric.properties
 **.db
 **__pycache__
 backend/jsons**
+backend/test_auto_k.py

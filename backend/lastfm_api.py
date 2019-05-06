@@ -5,6 +5,8 @@ A file for managing any last_fm calls
 import requests
 import time
 from threading import Thread, Event
+from collections import deque
+import urllib.parse
 
 # constants
 api_key = "a7dd7b2ec7530f54b6873584c8b87621"
@@ -15,7 +17,7 @@ request_headers = {
     'User-Agent': popular_user_agent
 }
 request_endpoint = "http://ws.audioscrobbler.com/2.0/"
-wait_time = 1  # Seconds between request calls
+# wait_time = 1  # Seconds between request calls
 
 """
 Similar json format:
@@ -43,19 +45,26 @@ similartracks: {
 
 # Threading class
 class DelayedApiCalls(Thread):
-    def __init__(self, iterator_of_title_artists):
+    def __init__(self, callback_func):
         Thread.__init__(self)
-        self.song_data = iterator_of_title_artists
+        self.song_deque = deque()
         self.stopped = Event()
+        self.last_call = None
+
+    def add_songs(self, song_data):
+        for (title, artist) in song_data:
+            self.song_deque.append((title, artist))
+        if not self.isAlive:
+            self.run()
 
     def run(self):
-        for (title, artist) in self.song_data:
-            while not self.stopped.wait(1):
-                # do thing w/ title and artist
-                raise ValueError()
+        while self.song_deque:
+            title, artist = self.song_deque.popleft()
+            while (self.last_call is None) or (not self.stopped.wait(time.time() - self.last_call)):
+                self.last_call = time.time()
 
-
-def track_similars(title, artist, *, limit=50, use_threading=False):
+previous_calls = [None]
+def track_similars(title, artist, *, limit=None, last_call=False):
     """
     Queries the lastfm database to get the similar music data for a given title and artist
     If limit is provided, it will get no more than limit results
@@ -71,9 +80,14 @@ def track_similars(title, artist, *, limit=50, use_threading=False):
     }
     if limit:
         data["limit"] = limit
-    if not use_threading:
+    if not last_call or not previous_calls[0]:
         time.sleep(1)
+    else:
+        wait_time = 1 - (time.time() - previous_calls[0])
+        wait_time = max([wait_time, 0])
+        time.sleep(wait_time)
     resp = requests.get(url=request_endpoint, headers=request_headers, data=data)
+    previous_calls[0] = time.time()
     j = resp.json()
     return j
 
@@ -97,7 +111,11 @@ def get_top_songs(artist):
         "artist": artist
     }
     time.sleep(1)
-    resp = requests.get(url=request_endpoint, headers=request_headers, data=data)
+    # For some reason, data call stopped working
+    # resp = requests.get(url=request_endpoint, headers=request_headers, data=data)
+    # Simple work around:
+    request_and_data = request_endpoint + '?' + urllib.parse.urlencode(data)
+    resp = requests.get(url=request_and_data, headers=request_headers)
     j = resp.json()
     yield from map(read_sim_track_json, j["toptracks"]["track"])
 

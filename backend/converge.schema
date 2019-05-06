@@ -4,8 +4,8 @@ CREATE TABLE IF NOT EXISTS simple_track_id(
 );
 CREATE TABLE IF NOT EXISTS simple_song_id(
 	simple_id INT PRIMARY KEY,
-	title TEXT NOT NULL,
-	artist TEXT NOT NULL
+	title TEXT COLLATE NOCASE NOT NULL,
+	artist TEXT COLLATE NOCASE NOT NULL
 );
 CREATE INDEX IF NOT EXISTS song_data_ndx ON simple_song_id (title, artist, simple_id);
 CREATE INDEX IF NOT EXISTS track_ndx ON simple_track_id (simple_id, track_id);

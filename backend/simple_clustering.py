@@ -1,18 +1,15 @@
 #!/Users/cj/anaconda3/bin/python
 """
-TODO:
-Create angles using the amount of simlarity between clusters
-    Map the difference to a low and high amount
-    IE: create a similarity matrix of values between each two clusters
-    Set a highest and lowest amount based on the min and max of pairwise similarity between clusters
-Add color
-Include target_similarity
-Set the gap of the angles to be where the legend is
-Enable using real data w/ API
-Chain to grab more values
-
-----------------
 A file for managing all the clustering aspects
+----------------
+TODO:
+Chain to grab more values
+Use two hop rule: (if a -> b w/ x% chance and b -> c w/ y% chance, (x+y-1) <= (a -> c) <= min(x, y)
+    if x and y are independent, it is exactly x * y
+Have to figure out how to deal with reverse similarity:
+    If 90% of fringe song like popular song, but 5% of popular song like fringe song,
+        then num_pop * .05 = num_fringe*.9 -> num_fringe = 1/18 * num_pop, num_pop = 18*num_fringe
+    Can extrapolate relative size using two-way
 """
 
 # Imports
@@ -22,13 +19,13 @@ import numpy as np
 from sklearn.cluster import SpectralClustering
 import json
 import math
-from itertools import islice, permutations, chain, product
+from itertools import islice, permutations, chain
 import os
 import sys
 
 # Constants
 converge_db = db_reader.converge_db()
-color_similarity_threshold = 0.75
+color_similarity_threshold = 0.9
 legend_position = 7/4 * math.pi
 # no_data_similarity = 0.5
 no_data_similarity = 0
@@ -63,12 +60,17 @@ def get_similarity_matrix_by_title_artist(title, artist, *, sim_limit=50):
     return np.matrix(similarity_matrix), similars, ratings
 
 
-def n_clustering(sim_matrix, similar_song_data, similar_ratings, *, num_clusters=5, top_size=20):
+def n_clustering(sim_matrix, similar_song_data, similar_ratings, *, num_clusters=None, top_size=20):
     """
     sim_matrix is a matrix of similarities between the songs
     similar_song_data is an iterator of (title, artist) values
     similar_ratings is an iterator of similarity ratings
     """
+    if num_clusters is None:
+        num_clusters = 5
+        # num_clusters = predict_k(sim_matrix)
+        # print("CHOSE {0} CLUSTERS".format(num_clusters))
+
     # Determine which cluster to place things in
     clustering_results = SpectralClustering(num_clusters).fit_predict(sim_matrix)
 
@@ -113,10 +115,13 @@ def n_clustering(sim_matrix, similar_song_data, similar_ratings, *, num_clusters
     # Combine the responses
     return list(zip(clusters, center_distance)), cluster_similarity
 
-def cluster_by_title_artist(title, artist, *, num_clusters=5, top_size=20):
+def cluster_by_title_artist(title, artist, *, num_clusters=None, top_size=20):
     # Collect the data
     sim_matrix, similars, ratings = get_similarity_matrix_by_title_artist(title, artist)
-    return n_clustering(sim_matrix, similars, ratings, num_clusters=num_clusters, top_size=top_size)
+    if num_clusters is not None:
+        return n_clustering(sim_matrix, similars, ratings, num_clusters=num_clusters, top_size=top_size)
+    else:
+        return n_clustering(sim_matrix, similars, ratings, top_size=top_size)
 
 def get_angles_from_clusters(clusters, center_distances, cosimilarity):
     """
@@ -142,7 +147,7 @@ def get_angles_from_clusters(clusters, center_distances, cosimilarity):
     # Not sure how to do non-trivial method
     def ordering_pushback(ordering):
         for ndx1, ndx2 in chain(zip(ordering, ordering[1:]), ((ordering[-1], ordering[0]),)):
-            yield (cosimilarity[ndx1, ndx2] + 0.10)
+            yield (cosimilarity[ndx1, ndx2] or 0 + 0.10)
 
     def score_ordering(ordering):
         return sum(ordering_pushback(ordering))
@@ -202,8 +207,11 @@ def fix_ordering(ordering, items):
 
 basic_json_filepath = ('jsons/', '.json')
 title_artist_separator = ' '
-def create_json(title, artist, *, num_clusters = 5, top_size = 20, fake_out=False):
-    clustering, cluster_sims = cluster_by_title_artist(title, artist, num_clusters=num_clusters, top_size=top_size)
+def create_json(title, artist, *, num_clusters = None, top_size = 20, fake_out=False):
+    if num_clusters is not None:
+        clustering, cluster_sims = cluster_by_title_artist(title, artist, num_clusters=num_clusters, top_size=top_size)
+    else:
+        clustering, cluster_sims = cluster_by_title_artist(title, artist, top_size=top_size)
     clusters, center_distances = zip(*clustering)
     ordering, angles, colors = get_angles_from_clusters(clusters, center_distances, cluster_sims)
     clustering = fix_ordering(ordering, clustering)
@@ -223,7 +231,7 @@ def create_json(title, artist, *, num_clusters = 5, top_size = 20, fake_out=Fals
         for json_filepath in (basic_json_filepath, ('../front-end/songjson/', '.json')):
             with open("{0}{1}{2}{3}{4}".format(json_filepath[0], title.replace('/', ''), title_artist_separator, artist.replace('/', ''), json_filepath[1]), 'w') as f:
                 json.dump(json_obj, f)
-        print("Finished json: {0}, {1}".format(title, artist))
+        print("Finished json: {0} {1}".format(title, artist))
 
 def test_jsons():
     os.makedirs("jsons")
@@ -288,21 +296,27 @@ def json_all_modern():
         title, artist = converge_db.c.execute("SELECT title, artist FROM simple_song_id WHERE simple_id = ?", new_sid).fetchone()
         create_json(title, artist)
 
-def make_json_from_anywhere(title, artist, *, num_clusters = 5, top_size=None):
+
+def make_json_from_anywhere(title, artist, *, num_clusters=None, top_size=None):
     title, artist = title.lower(), artist.lower()
     converge_db.add_all_sim_lastfm(title, artist)
     create_json(title, artist, num_clusters=num_clusters, top_size=top_size)
 
-def add_many_songs(artist, *, num_songs=None, num_clusters=5, top_size=None):
-    for (i, (title, *_)) in enumerate(lastfm_api.get_top_songs(artist)):
+
+def add_many_songs(artist, *, num_songs=1, num_clusters=5, top_size=None):
+    """
+    Adds the top songs by the artist until it has clustered num_songs songs, or reached all available songs by artist
+    """
+    i = 0
+    for (title, *_) in lastfm_api.get_top_songs(artist):
         if i == num_songs:
             print("Finished creating songs")
             break
         try:
             make_json_from_anywhere(title, artist, num_clusters=num_clusters, top_size=top_size)
+            i += 1
         except ValueError:
             print("Not enough data to add song {0} by {1}".format(title, artist))
-            pass
 
 if __name__ == "__main__":
     if len(sys.argv) >= 3:
@@ -316,4 +330,8 @@ if __name__ == "__main__":
     elif len(sys.argv) == 2:
         filename, artist = sys.argv
         add_many_songs(artist)
+    else:
+        # make_json_from_anywhere("Africa", "toto")
+        print(list(lastfm_api.get_top_songs("journey")))
+        # add_many_songs("journey")
 
