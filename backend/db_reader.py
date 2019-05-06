@@ -158,6 +158,12 @@ class converge_db:
         return self.get_sorted_similars(title, artist)
 
     def get_two_hops(self, sid):
+        """
+        Get's all two-hops, which is to say given (a->b similarity, and b->c similarity) implies a->c similarity
+        Assumes the lower-bound probability for a->c, which is (Pr(a->b) + Pr(b->c) - 1)
+            The upper-bound is min(Pr(a->b), Pr(b->c)), and if they're independent, it is exactly Pr(a->b) * Pr(b->c)
+            Note that these are all the same if Pr(a->b) = 1, or Pr(b->c) = 1
+        """
         # Collect all the grandchildren
         temp_cursor = self.conn.cursor()
         temp_cursor.execute("""

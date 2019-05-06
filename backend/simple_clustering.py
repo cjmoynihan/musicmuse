@@ -26,9 +26,11 @@ import sys
 # Constants
 converge_db = db_reader.converge_db()
 color_similarity_threshold = 0.9
+# The angles of the clusters are rotated to give the legend the largest possible gap
 legend_position = 7/4 * math.pi
-# no_data_similarity = 0.5
+# Depending on how the cosine similarity is calculated, could map similarity to range (0, 1) or (0.5, 1)
 no_data_similarity = 0
+# no_data_similarity = 0.5
 
 
 def get_similarity_matrix_by_title_artist(title, artist, *, sim_limit=50):
