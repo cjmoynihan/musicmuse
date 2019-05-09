@@ -4,25 +4,33 @@ A file for managing all the clustering aspects
 ----------------
 Other features to add:
 * Use two-hops functions
+    * two-hops = if (a->b and b->c), then (a->c) at least (a->b + b->c - 1), at most min(a->b, b->c)
+    * reverse two-hops using (b->a) = (|a| / |b|) * (a->b)
 * Use approximation rule if not enough similars:
     * Grab songs similar to similars
     * Grab other songs of the same artist
-* Have to figure out how to deal with reverse similarity:
-    * If 90% of fringe song like popular song, but 5% of popular song like fringe song,
-        * then num_pop * .05 = num_fringe*.9 -> num_fringe = 1/18 * num_pop, num_pop = 18*num_fringe
-    * Could extrapolate relative size to original and normalize all similarities to number of people that like both
-        * Given that a->b describes the likelihood of b given a
-        * Given o is the original song, and a and b are two similar songs
-        * Find k for |a| * k = |b|
-        * if a->b:
-            * |a| * (a->b) / (b->a) = |b|
-        * else:
-            * |a| * (a->o) / (o->a) * (o->b) / (b->o) = |b|
 * Create spotify playlist
     * Play all the songs in a cluster without needing to click each
     * Add them to the user
 * Automatically determine the number of clusters. Maybe use elbow or eigengap methods?
-    * Deterine the 'rating' of a cluster
+    * Elbow method:
+        * Determine the 'rating' of each cluster
+        * Determine the rating of a clustering as the sum of the ratings of the clusters (or average depending on metric)
+        * Get the rating change for each increase of k
+        * Determine when the change in the change is the greatest (the elbow)
+        * Pick the clustering right before the greatest change
+* Have to figure out how to deal with one-way similarity:
+    * The similarity is not two way, as I had expected:
+        * If 90% of fringe song like popular song, but 5% of popular song like fringe song,
+            * then num_pop * .05 = num_fringe*.9 -> num_fringe = 1/18 * num_pop, num_pop = 18*num_fringe
+        * Could extrapolate relative size to original and normalize all similarities to number of people that like both
+            * Given that a->b describes the likelihood of b given a
+            * Given o is the original song, and a and b are two similar songs
+            * Find k for |a| * k = |b|
+            * if a->b:
+                * |a| * (a->b) / (b->a) = |b|
+            * else:
+                * |a| * (a->o) / (o->a) * (o->b) / (b->o) = |b|
 """
 
 # Imports
@@ -40,13 +48,13 @@ import sys
 converge_db = db_reader.converge_db()
 color_similarity_threshold = 0.9
 # The angles of the clusters are rotated to give the legend the largest possible gap
-legend_position = 7/4 * math.pi
+legend_position = 1/4 * math.pi
 # Depending on how the cosine similarity is calculated, could map similarity to range (0, 1) or (0.5, 1)
 no_data_similarity = 0
 # no_data_similarity = 0.5
 
 
-def get_similarity_matrix_by_title_artist(title, artist, *, sim_limit=50):
+def get_similarity_matrix_by_title_artist(title, artist, *, sim_limit=None):
     # print("Gathering similar songs")
     all_data = converge_db.get_sorted_similars(title, artist)
     # print("Found {0} similar songs".format(len(all_data)))
@@ -63,7 +71,7 @@ def get_similarity_matrix_by_title_artist(title, artist, *, sim_limit=50):
     # print("Creating the similarity matrix")
     # Create the default values
     similarity_matrix = [
-        [0 if i == j else no_data_similarity for j in range(len(similars))]
+        [0 if i == j else (1 - no_data_similarity) for j in range(len(similars))]
         for i in range(len(similars))
     ]
     for (i, (sim_title, sim_artist)) in enumerate(similars):
@@ -105,7 +113,8 @@ def n_clustering(sim_matrix, similar_song_data, similar_ratings, *, num_clusters
     clusters, center_distance = zip(*sorted(zip(clusters, center_distance), key=lambda x: x[1]))
     # Get the cluster to cluster distance
     # print("Calculating cluster co-similarity")
-    cluster_similarity = np.matrix([[(None if i == j else 0.5) for j in range(len(clusters))] for i in range(len(clusters))])
+    # cluster_similarity = np.matrix([[(None if i == j else 0.5) for j in range(len(clusters))] for i in range(len(clusters))])
+    cluster_similarity = np.matrix([[(None if i == j else (1 - no_data_similarity)) for j in range(len(clusters))] for i in range(len(clusters))])
     song_indexes = {song_data: i for (i, song_data) in enumerate(similar_song_data)}
     for cluster1_ndx, cluster1 in enumerate(clusters):
         # for cluster2_ndx, cluster2 in enumerate(clusters[cluster1_ndx+1:], cluster1_ndx+1):
@@ -130,13 +139,48 @@ def n_clustering(sim_matrix, similar_song_data, similar_ratings, *, num_clusters
     # Combine the responses
     return list(zip(clusters, center_distance)), cluster_similarity
 
+
+def rate_clustering(sim_matrix, clustering):
+    """
+    Get the fitness as the squared sum of the difference between every pair of nodes
+    Maybe
+    So [[a, b], [c, d]] =
+    """
+    raise NotImplementedError()
+
+
+def adaptive_clustering(sim_matrix, similars, ratings, *, top_size=20):
+    """
+    Very simple, increases clustering size while still spliting the largest group (tries to ignore noise)
+    """
+    clustering, cluster_sims = n_clustering(sim_matrix, similars, ratings, num_clusters=2, top_size=top_size)
+    old_clusters = set(frozenset(cluster) for cluster in next(zip(*clustering)) if len(cluster) < top_size)
+    for k in range(3, 20):
+        new_clustering, new_cluster_sims = n_clustering(sim_matrix, similars, ratings, num_clusters=k, top_size=top_size)
+        new_clusters = set(frozenset(cluster) for cluster in next(zip(*clustering)) if len(cluster) < top_size)
+        if len(old_clusters.difference(new_clusters)) > 1:
+            print("The new clusters broke apart the old one")
+            print("OLD CLUSTERS")
+            print(old_clusters)
+            print("NEW CLUSTERS")
+            print(new_clusters)
+            print("Difference between clusters:")
+            print(old_clusters.difference(new_clusters))
+            break
+        clustering, cluster_sims = new_clustering, new_cluster_sims
+        old_clusters = new_clusters
+    return clustering, cluster_sims
+
+
 def cluster_by_title_artist(title, artist, *, num_clusters=None, top_size=20):
     # Collect the data
     sim_matrix, similars, ratings = get_similarity_matrix_by_title_artist(title, artist)
     if num_clusters is not None:
         return n_clustering(sim_matrix, similars, ratings, num_clusters=num_clusters, top_size=top_size)
     else:
-        return n_clustering(sim_matrix, similars, ratings, top_size=top_size)
+        return adaptive_clustering(sim_matrix, similars, ratings, top_size=top_size)
+        # return n_clustering(sim_matrix, similars, ratings, top_size=top_size)
+
 
 def get_angles_from_clusters(clusters, center_distances, cosimilarity):
     """
@@ -167,7 +211,12 @@ def get_angles_from_clusters(clusters, center_distances, cosimilarity):
     def score_ordering(ordering):
         return sum(ordering_pushback(ordering))
 
-    best_ordering = list(min(permutations(range(len(clusters))), key=score_ordering))
+    if len(clusters) > 8:
+        # Don't do the brute force if we have a ton of clusters. Just try a couple
+        # More like probably decent ordering at this point
+        best_ordering = list(min((np.random.permutation(range(len(clusters))) for _ in range(100)), key=score_ordering))
+    else:
+        best_ordering = list(min(permutations(range(len(clusters))), key=score_ordering))
 
     # Create angles and colors
     angles = list()
@@ -215,10 +264,12 @@ def get_angles_from_clusters(clusters, center_distances, cosimilarity):
     print("Done assigning angles and colors")
     return best_ordering, angles, colors
 
+
 def fix_ordering(ordering, items):
     items = list(enumerate(items))
     items.sort(key=lambda i_item: ordering[i_item[0]])
     return [item for (i, item) in items]
+
 
 basic_json_filepath = ('jsons/', '.json')
 title_artist_separator = ' '
@@ -230,6 +281,8 @@ def create_json(title, artist, *, num_clusters = None, top_size = 20, fake_out=F
     clusters, center_distances = zip(*clustering)
     ordering, angles, colors = get_angles_from_clusters(clusters, center_distances, cluster_sims)
     clustering = fix_ordering(ordering, clustering)
+    print("Num clusters:")
+    print(len(clustering))
     print("Cluster sizes:")
     cluster_sizes = sorted(len(cluster) for (cluster, distance) in clustering)
     print(', '.join(map(str, cluster_sizes)))
@@ -251,6 +304,7 @@ def create_json(title, artist, *, num_clusters = None, top_size = 20, fake_out=F
                 json.dump(json_obj, f)
         print("Finished json: {0} {1}".format(title, artist))
 
+
 def test_jsons():
     os.makedirs("jsons")
     all_songs = converge_db.all_song_data()
@@ -260,6 +314,7 @@ def test_jsons():
     for song_data in all_songs:
         print("Creating {0} by {1}".format(*song_data))
         create_json(*song_data)
+
 
 def test_clustering():
     pop_song_data = [
@@ -293,12 +348,14 @@ def test_clustering():
     print("BEST PICK: {0}".format(best_pick[1]))
     print("WITH SMALL CLUSTER {0}".format(best_pick[0]))
 
+
 def add_all_songs():
     for (title, artist) in converge_db.all_song_data():
         try:
             create_json(title, artist)
         except ValueError:
             pass
+
 
 def json_all_modern():
     first_modern_data = next(iter(lastfm_api.get_popular()))
@@ -315,13 +372,17 @@ def json_all_modern():
         create_json(title, artist)
 
 
-def make_json_from_anywhere(title, artist, *, num_clusters=None, top_size=None):
+def make_json_from_anywhere(title, artist):
+    """
+    Num clusters describes a set number of clusters
+    top size describes the maximum amount of items in each cluster
+    """
     title, artist = title.lower(), artist.lower()
     converge_db.add_all_sim_lastfm(title, artist)
-    create_json(title, artist, num_clusters=num_clusters, top_size=top_size)
+    create_json(title, artist)
 
 
-def add_many_songs(artist, *, num_songs=1, num_clusters=5, top_size=None):
+def add_many_songs(artist, *, num_songs=1):
     """
     Adds the top songs by the artist until it has clustered num_songs songs, or reached all available songs by artist
     """
@@ -331,10 +392,11 @@ def add_many_songs(artist, *, num_songs=1, num_clusters=5, top_size=None):
             print("Finished creating songs")
             break
         try:
-            make_json_from_anywhere(title, artist, num_clusters=num_clusters, top_size=top_size)
+            make_json_from_anywhere(title, artist)
             i += 1
         except ValueError:
             print("Not enough data to add song {0} by {1}".format(title, artist))
+
 
 if __name__ == "__main__":
     if len(sys.argv) >= 3:
