@@ -178,8 +178,10 @@ def adaptive_clustering(sim_matrix, similars, ratings, *, top_size=20):
                 # or len(cluster_diff) > 1:
         # Method 3 - stopped 'peeling' off of biggest cluster
         # if any(len(cluster) != biggest_cluster for cluster in cluster_diff):
-        # Method 4 - stopeed increasing the size of the clusters
-        if sum(len(c) for (c, d) in new_clustering) <= sum(len(c) for (c, d) in clustering):
+        # Method 4 - continue while increasing size of clusters
+        # if sum(len(c) for (c, d) in new_clustering) <= sum(len(c) for (c, d) in clustering):
+        # Method 5 - (method 4 and method 3)
+        if (sum(len(c) for (c, d) in new_clustering) <= sum(len(c) for (c, d) in clustering)) and (max(len(c) for c in cluster_diff) < max(len(c) for c in next(zip(*clustering)))):
             # print("The new clusters broke apart the old one")
             format_clusters = lambda clusters: '\n'.join(f'{i}: '+', '.join(f'{title} by {artist}' for (title, artist) in sorted(cluster)) for (i, cluster) in enumerate(sorted(clusters),1))
             print("OLD CLUSTERS")
@@ -450,5 +452,6 @@ if __name__ == "__main__":
         # make_json_from_anywhere("Africa", "toto")
         # print(list(lastfm_api.get_top_songs("journey")))
         # add_many_songs("journey")
-        add_many_songs("Arctic Monkeys")
+        # add_many_songs("Arctic Monkeys")
+        make_json_from_anywhere("Genghis Khan", "Miike Snow")
 

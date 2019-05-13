@@ -8,6 +8,7 @@ import time
 
 # Constants
 
+
 class converge_db:
     def __init__(self):
         self.db_name = 'converge.db'
@@ -54,9 +55,11 @@ class converge_db:
             return None
         return list(result)
 
-    def get_sorted_similars(self, title, artist):
+    def get_sorted_similars(self, title, artist, *, fix_and_filter=False):
         """
         Gets all (title, artist, similarity) for a (title, artist) sorted by similarity (highest -> lowest)
+        If fix_unsearched is true, fix all of the songs for which there similars haven't yet been looked up
+        If filter_sparse is true, only return the (title, artists) which have links to or from the other (title, artists)
         """
         simple_ids = self.get_simple_from_title_artist(title, artist)
         if not simple_ids:
@@ -67,6 +70,25 @@ class converge_db:
         if len(simple_ids) > 1 and artist is not None:
             raise RuntimeWarning("There are multiple simple_ids for (title, artist):\n({0}, {1})".format(title, artist))
         simple_id = simple_ids[0]
+
+        if fix_and_filter:
+            # Make sure everything has been added to the database
+            self.c.execute("""
+            SELECT title, artist, similarity, simple_id_other
+            FROM simple_similars
+            INNER JOIN simple_song_id
+            ON simple_id_other = simple_id
+            WHERE simple_id_orig = ?
+            AND simple_id_other IS NOT NULL
+            ORDER BY similarity DESC
+            """, (simple_id,))
+            fetched_results = self.c.fetchall()
+            similar_data = set((title, artist) for (title, artist, *_) in self.c)
+            return [
+                (other_title, other_artist, similarity)
+                for (other_title, other_artist, similarity, *_) in fetched_results
+                if similarity and any((title, artist) in similar_data for (title, artist, *_) in self.add_from_lastfm(other_title, other_artist, commit=True))
+            ]
 
         # simple_id_other -> NULL for cases where there are no similar songs
         # This is to prevent constant lookups for songs that have already been discovered
@@ -79,6 +101,7 @@ class converge_db:
         AND simple_id_other IS NOT NULL
         ORDER BY similarity DESC
         """, (simple_id,))
+
         return [(other_title, other_artist, similarity) for (other_title, other_artist, similarity) in self.c if similarity]
 
     def add_from_lastfm(self, title, artist, *, commit=False):
@@ -88,10 +111,18 @@ class converge_db:
         """
         created, sid = self.insert_or_ignore_title_artist(title, artist)
         # Have to let this non-commit go by first
-        if self.c.execute("SELECT simple_id_orig FROM simple_similars WHERE simple_id_orig = ?", (sid,)).fetchone():
-            # print("Already added song {0} by {1}".format(title, artist))
-            return list()
-        # if commit:
+        similars = self.c.execute("""
+            SELECT title, artist, similarity
+            FROM simple_similars
+            LEFT JOIN simple_song_id
+            ON simple_id_other = simple_id
+            WHERE simple_id_orig = ?
+        """, (sid,)).fetchall()
+        if similars:
+            return similars
+        # if self.c.execute("SELECT simple_id_orig FROM simple_similars WHERE simple_id_orig = ?", (sid,)).fetchone():
+        #     # print("Already added song {0} by {1}".format(title, artist))
+        #     return list()
         print("Adding song {0} by {1}".format(title, artist))
         j = lastfm_api.track_similars(title, artist, last_call=True)
         # fixed_attributes = j['similartracks'].get('@attr', dict())
@@ -102,8 +133,8 @@ class converge_db:
             print("Recieved {0} similar songs".format(len(all_similar_details)))
         if len(all_similar_details) == 0:
             self.c.execute("INSERT INTO simple_similars(simple_id_orig) VALUES(?)", (sid,))
-        for track_dict in all_similar_details:
-            other_title, other_artist, other_sim = lastfm_api.read_sim_track_json(track_dict)
+        all_similar_details = [lastfm_api.read_sim_track_json(track_dict) for track_dict in all_similar_details]
+        for other_title, other_artist, other_sim in all_similar_details:
             # Check to see if song exists
             other_created, other_sid = self.insert_or_ignore_title_artist(other_title, other_artist)
             self.c.execute("INSERT INTO simple_similars(simple_id_orig, simple_id_other, similarity) VALUES(?, ?, ?)", (sid, other_sid, other_sim))
@@ -115,7 +146,7 @@ class converge_db:
         """
         Adds a song and up to 50 of its children to the similarity pool
         """
-        for (i, (other_title, other_artist, other_sim)) in enumerate(map(lastfm_api.read_sim_track_json, self.add_from_lastfm(title, artist))):
+        for (i, (other_title, other_artist, other_sim)) in enumerate(self.add_from_lastfm(title, artist)):
             # For now, make sure we don't call the service too many times/second
             if i % (stop_at // 10) == 0:
                 print("{0}% complete ".format(i*2))
