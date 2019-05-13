@@ -111,15 +111,15 @@ class converge_db:
             self.conn.commit()
         return all_similar_details
 
-    def add_all_sim_lastfm(self, title, artist):
+    def add_all_sim_lastfm(self, title, artist, *, stop_at=50):
         """
         Adds a song and up to 50 of its children to the similarity pool
         """
         for (i, (other_title, other_artist, other_sim)) in enumerate(map(lastfm_api.read_sim_track_json, self.add_from_lastfm(title, artist))):
             # For now, make sure we don't call the service too many times/second
-            if i % 5 == 0:
+            if i % (stop_at // 10) == 0:
                 print("{0}% complete ".format(i*2))
-                if i == 50:
+                if i == stop_at:
                     break
             self.add_from_lastfm(other_title, other_artist)
         self.conn.commit()

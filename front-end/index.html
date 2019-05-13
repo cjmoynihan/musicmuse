@@ -482,7 +482,7 @@ function generateVis(songname){
                     .attr('cy', 0)
                     .attr('r',0)
                     //.style('fill',blues(i))
-                    .style('fill',colorlist[d.color[0]][0])
+                    .style('fill',colorlist[(d.color[0] % colorlist.length)][0])
                     .style('stroke','#D9D9D9')
 
                     cd

@@ -2,16 +2,23 @@
 """
 A file for managing all the clustering aspects
 ----------------
-Other features to add:
+Other potential features:
+----------------------------------------------------------------
+Increase organization
+----------------
+* Create spotify playlist
+    * Play all the songs in a cluster without needing to click each
+    * Add them to the user
+
+----------------
+Experimentation with increasing clustering effectiveness:
+----------------
 * Use two-hops functions
     * two-hops = if (a->b and b->c), then (a->c) at least (a->b + b->c - 1), at most min(a->b, b->c)
     * reverse two-hops using (b->a) = (|a| / |b|) * (a->b)
 * Use approximation rule if not enough similars:
     * Grab songs similar to similars
     * Grab other songs of the same artist
-* Create spotify playlist
-    * Play all the songs in a cluster without needing to click each
-    * Add them to the user
 * Automatically determine the number of clusters. Maybe use elbow or eigengap methods?
     * Elbow method:
         * Determine the 'rating' of each cluster
@@ -143,43 +150,69 @@ def n_clustering(sim_matrix, similar_song_data, similar_ratings, *, num_clusters
 def rate_clustering(sim_matrix, clustering):
     """
     Get the fitness as the squared sum of the difference between every pair of nodes
-    Maybe
-    So [[a, b], [c, d]] =
+    So maybe:
+    fit([[a, b], [c, d]]) = (a->b - a->c - a->d) + (b->a - b->c - b->d) + (c->d - c->a - c->b) + (d->c - d->a - d->b)
     """
     raise NotImplementedError()
 
 
 def adaptive_clustering(sim_matrix, similars, ratings, *, top_size=20):
     """
-    Very simple, increases clustering size while still spliting the largest group (tries to ignore noise)
+    Very simple, increases clustering size while still splitting the largest group (tries to ignore noise)
     """
     clustering, cluster_sims = n_clustering(sim_matrix, similars, ratings, num_clusters=2, top_size=top_size)
+    # Hash results of the old clustering
     old_clusters = set(frozenset(cluster) for cluster in next(zip(*clustering)) if len(cluster) < top_size)
+    biggest_cluster = max(len(cluster) for (cluster, dist) in clustering)
     for k in range(3, 20):
         new_clustering, new_cluster_sims = n_clustering(sim_matrix, similars, ratings, num_clusters=k, top_size=top_size)
-        new_clusters = set(frozenset(cluster) for cluster in next(zip(*clustering)) if len(cluster) < top_size)
-        if len(old_clusters.difference(new_clusters)) > 1:
-            print("The new clusters broke apart the old one")
+        # Hash results of the new clustering
+        new_clusters = set(frozenset(cluster) for cluster in next(zip(*new_clustering)) if len(cluster) < top_size)
+        # See what changed
+        cluster_diff = old_clusters - new_clusters
+
+        # Method 1 - more than one cluster was changed
+        # if len(old_clusters.difference(new_clusters)) > 1:
+        # Method 2 - If more than one cluster was changed, or the cluster that was changed was not the biggest
+        # if (len(cluster_diff) == 1 and next(iter(cluster_diff)) != max(old_clusters, key=len)):
+                # or len(cluster_diff) > 1:
+        # Method 3 - stopped 'peeling' off of biggest cluster
+        # if any(len(cluster) != biggest_cluster for cluster in cluster_diff):
+        # Method 4 - stopeed increasing the size of the clusters
+        if sum(len(c) for (c, d) in new_clustering) <= sum(len(c) for (c, d) in clustering):
+            # print("The new clusters broke apart the old one")
+            format_clusters = lambda clusters: '\n'.join(f'{i}: '+', '.join(f'{title} by {artist}' for (title, artist) in sorted(cluster)) for (i, cluster) in enumerate(sorted(clusters),1))
             print("OLD CLUSTERS")
-            print(old_clusters)
+            print(format_clusters(old_clusters))
+            print([len(c) for c in old_clusters])
+            print()
+            # print(old_clusters)
             print("NEW CLUSTERS")
-            print(new_clusters)
-            print("Difference between clusters:")
-            print(old_clusters.difference(new_clusters))
+            print(format_clusters(new_clusters))
+            print([len(c) for c in new_clusters])
+            print()
+            # print(new_clusters)
+            print("DIFF BETWEEN CLUSTERS:")
+            print(format_clusters(old_clusters - new_clusters))
+            print()
+            # print("ACTUAL CLUSTERS")
+            # print(format_clusters(next(zip(*clustering))))
+            # print()
             break
         clustering, cluster_sims = new_clustering, new_cluster_sims
         old_clusters = new_clusters
+        biggest_cluster = max(len(cluster) for (cluster, dist) in clustering)
     return clustering, cluster_sims
 
 
 def cluster_by_title_artist(title, artist, *, num_clusters=None, top_size=20):
     # Collect the data
     sim_matrix, similars, ratings = get_similarity_matrix_by_title_artist(title, artist)
+    # num_clusters = 10
     if num_clusters is not None:
         return n_clustering(sim_matrix, similars, ratings, num_clusters=num_clusters, top_size=top_size)
     else:
         return adaptive_clustering(sim_matrix, similars, ratings, top_size=top_size)
-        # return n_clustering(sim_matrix, similars, ratings, top_size=top_size)
 
 
 def get_angles_from_clusters(clusters, center_distances, cosimilarity):
@@ -211,10 +244,13 @@ def get_angles_from_clusters(clusters, center_distances, cosimilarity):
     def score_ordering(ordering):
         return sum(ordering_pushback(ordering))
 
+
+    # Pick an arbitrary value to stop doing the n! process of finding the 'best' ordering
     if len(clusters) > 8:
         # Don't do the brute force if we have a ton of clusters. Just try a couple
         # More like probably decent ordering at this point
-        best_ordering = list(min((np.random.permutation(range(len(clusters))) for _ in range(100)), key=score_ordering))
+        # Also toss the original ordering in there since that's visually appealing
+        best_ordering = list(min(chain((cluster_ordering,), (np.random.permutation(len(clusters)) for _ in range(100))), key=score_ordering))
     else:
         best_ordering = list(min(permutations(range(len(clusters))), key=score_ordering))
 
@@ -412,6 +448,7 @@ if __name__ == "__main__":
         add_many_songs(artist)
     else:
         # make_json_from_anywhere("Africa", "toto")
-        print(list(lastfm_api.get_top_songs("journey")))
+        # print(list(lastfm_api.get_top_songs("journey")))
         # add_many_songs("journey")
+        add_many_songs("Arctic Monkeys")
 
