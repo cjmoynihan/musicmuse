@@ -239,6 +239,7 @@ function searchButton(){
   generateVis(typedSong)
 }
 
+// ---------------------------- Create the spotify widgets -------------------------------
 async function getSongPlayWidget(songName) {
   let resp = await fetch(`https://api.spotify.com/v1/search?q=${encodeURI(songName)}&type=track&limit=1&`, {
     headers: {
@@ -530,7 +531,9 @@ function generateVis(songname){
                       //d3.select(this).style('fill',blues(i))
                       
                     });
-                    
+
+                    // ------------------------ Call the below when a cluster is clicked on ------------------------
+
                     let k = i;
                     cd.on("click", async function(){
                       global.selectedIndex = i;

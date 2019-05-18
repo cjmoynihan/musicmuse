@@ -180,7 +180,7 @@ def adaptive_clustering(sim_matrix, similars, ratings, *, top_size=20):
         # if any(len(cluster) != biggest_cluster for cluster in cluster_diff):
         # Method 4 - continue while increasing size of clusters
         # if sum(len(c) for (c, d) in new_clustering) <= sum(len(c) for (c, d) in clustering):
-        # Method 5 - (method 4 and method 3)
+        # Method 5 - (method 4 and method 3). continue while peeling biggest cluster or increasing size of clusters
         if (sum(len(c) for (c, d) in new_clustering) <= sum(len(c) for (c, d) in clustering)) and (max(len(c) for c in cluster_diff) < max(len(c) for c in next(zip(*clustering)))):
             # print("The new clusters broke apart the old one")
             format_clusters = lambda clusters: '\n'.join(f'{i}: '+', '.join(f'{title} by {artist}' for (title, artist) in sorted(cluster)) for (i, cluster) in enumerate(sorted(clusters),1))
@@ -194,9 +194,9 @@ def adaptive_clustering(sim_matrix, similars, ratings, *, top_size=20):
             print([len(c) for c in new_clusters])
             print()
             # print(new_clusters)
-            print("DIFF BETWEEN CLUSTERS:")
-            print(format_clusters(old_clusters - new_clusters))
-            print()
+            # print("DIFF BETWEEN CLUSTERS:")
+            # print(format_clusters(old_clusters - new_clusters))
+            # print()
             # print("ACTUAL CLUSTERS")
             # print(format_clusters(next(zip(*clustering))))
             # print()
@@ -328,6 +328,7 @@ def create_json(title, artist, *, num_clusters = None, top_size = 20, fake_out=F
     json_obj = list()
     for (i, ((cluster, center_distance), angle, color)) in enumerate(zip(clustering, angles, colors)):
         titles, artists = zip(*cluster)
+        print("Cluster {0} with size {1}. Top song: {2} {3}".format(i+1, cluster_sizes[i], titles[0], artists[0]))
         cluster_dict = {
             "songs": titles,
             "artists": artists,
