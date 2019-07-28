@@ -6,7 +6,7 @@ import requests
 import time
 from threading import Thread, Event
 from collections import deque
-import urllib.parse
+from json.decoder import JSONDecodeError
 
 # constants
 api_key = "a7dd7b2ec7530f54b6873584c8b87621"
@@ -88,7 +88,13 @@ def track_similars(title, artist, *, limit=None, last_call=False):
         time.sleep(wait_time)
     resp = requests.get(url=request_endpoint, headers=request_headers, params=data)
     previous_calls[0] = time.time()
-    j = resp.json()
+    # Not sure why there is a problem with this piece of code, but I'll get to the bottom of it with a try catch
+    try:
+        j = resp.json()
+    except JSONDecodeError as e:
+        # Just try again I guess? I'm not sure why its sometimes crashes
+        print("Failed at song {0} by {1}, trying again".format(title, artist))
+        j = track_similars(title, artist, limit=limit, last_call=last_call)
     return j
 
 def _get_popular():

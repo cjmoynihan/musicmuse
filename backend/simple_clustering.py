@@ -337,8 +337,16 @@ def create_json(title, artist, *, num_clusters = None, top_size = 20, fake_out=F
         }
         json_obj.append(cluster_dict)
     if not fake_out:
-        for json_filepath in (basic_json_filepath, ('../front-end/songjson/', '.json')):
-            with open("{0}{1}{2}{3}{4}".format(json_filepath[0], title.replace('/', ''), title_artist_separator, artist.replace('/', ''), json_filepath[1]), 'w') as f:
+        backend_json_folder = 'jsons/'
+        frontend_json_folder = '../front-end/songjson/'
+        file_ext='.json'
+        title = title.replace('/', '')
+        artist = artist.replace('/', '')
+        title_artist_separator = ' '
+        for folder in (backend_json_folder, frontend_json_folder):
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+            with open(f'{folder}{title}{title_artist_separator}{artist}{file_ext}', 'w') as f:
                 json.dump(json_obj, f)
         print("Finished json: {0} {1}".format(title, artist))
 
@@ -412,6 +420,8 @@ def json_all_modern():
 
 def make_json_from_anywhere(title, artist):
     """
+    Creates a json 'even' if the song has not yet been added to the database. Make a direct lastfm call to do this.
+
     Num clusters describes a set number of clusters
     top size describes the maximum amount of items in each cluster
     """
@@ -437,21 +447,41 @@ def add_many_songs(artist, *, num_songs=1):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) >= 3:
+    # These params are used if nothing is passed
+    title = None
+    num_songs = 1
+    if len(sys.argv) > 3:
+        if not len(sys.argv) % 2 == 1:
+            raise ValueError("The number of arguments must be divisible by 2 or less than 2")
+        from itertools import tee
+        """
+        This should iterate through the arguments as ((title) (artist)) pairs
+        then parse each with make_json_from_anywhere(title, artist)
+        """
+        raise NotImplementedError("")
+    if len(sys.argv) == 3:
+        # Arguments accepted as (artist) (num top songs) or (title) (artist)
         if sys.argv[2].isdigit():
             filename, artist, num_songs, *_ = sys.argv
             num_songs = int(num_songs)
-            add_many_songs(artist, num_songs=num_songs)
         else:
             filename, title, artist, *_ = sys.argv
-            make_json_from_anywhere(title, artist)
     elif len(sys.argv) == 2:
+        # Argument accepted as (artist)
         filename, artist = sys.argv
         add_many_songs(artist)
     else:
-        # make_json_from_anywhere("Africa", "toto")
-        # print(list(lastfm_api.get_top_songs("journey")))
-        # add_many_songs("journey")
-        # add_many_songs("Arctic Monkeys")
-        make_json_from_anywhere("Genghis Khan", "Miike Snow")
+        # Test function for no arguments
+        title = """
+        dirty money
+        """.strip()
+        artist = """
+        weathers
+        """.strip()
+
+    # Do some kind of clustering
+    if title is None:
+        add_many_songs(artist, num_songs=num_songs)
+    else:
+        make_json_from_anywhere(title, artist)
 
