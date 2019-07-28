@@ -1,1 +1,1 @@
-var songsSuggestions = ["born to die lana del rey", "genghis khan miike snow", "gooey glass animals", "i kissed a girl katy perry", "magic ladyhawke", "my delirium ladyhawke", "summertime sadness lana del rey", "superposition young the giant", "toy boy stuck in the sound"];
+var songsSuggestions = ["born to die lana del rey", "dirty money weathers", "genghis khan miike snow", "gooey glass animals", "i kissed a girl katy perry", "magic ladyhawke", "my delirium ladyhawke", "summertime sadness lana del rey", "superposition young the giant", "toy boy stuck in the sound"];

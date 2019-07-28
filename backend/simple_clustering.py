@@ -62,12 +62,16 @@ no_data_similarity = 0
 
 
 def get_similarity_matrix_by_title_artist(title, artist, *, sim_limit=None):
-    # print("Gathering similar songs")
+    """
+    The similarity matrix describes how the songs are related to each other, using cosine similarity (1 implies strong similarity)
+    This is an n by n matrix of the songs related to (title, artist)
+    if sim limit is specified, caps the matrix to the top (sim_limit) songs, instead of including all found
+    """
     all_data = converge_db.get_sorted_similars(title, artist)
-    # print("Found {0} similar songs".format(len(all_data)))
+    # Abort if less than 5 songs
     if len(all_data) < 5:
         print("Not enough, aborting")
-        raise ValueError()
+        raise ValueError("Only {0} related songs to song {1} by artist {2}".format(len(all_data), title, artist))
     if sim_limit and len(all_data) > sim_limit:
         print("Reducing size to {0}".format(sim_limit))
         all_data = all_data[:sim_limit]
@@ -75,18 +79,19 @@ def get_similarity_matrix_by_title_artist(title, artist, *, sim_limit=None):
     similars, ratings = zip(*all_data)
     similar_indexes = dict((value, i) for (i, value) in enumerate(similars))
 
-    # print("Creating the similarity matrix")
-    # Create the default values
+    # Create the similarity matrix
+    # First make the default values
     similarity_matrix = [
         [0 if i == j else (1 - no_data_similarity) for j in range(len(similars))]
         for i in range(len(similars))
     ]
+    # Then add in the values for the rest of the songs
     for (i, (sim_title, sim_artist)) in enumerate(similars):
-        # print("On song {0}/{1}".format(i+1, len(similars)))
+        # Optional, print progress on similarity matrix:
+            # print("On song {0}/{1}".format(i+1, len(similars)))
         for (other_title, other_artist, other_similarity) in filter(lambda tas: tuple(tas[:2]) in similar_indexes.keys(), converge_db.get_sorted_similars(sim_title, sim_artist)):
             similarity_matrix[i][similar_indexes[(other_title, other_artist)]] = 1 - other_similarity
-    # print("Finished creating similarity matrix")
-    # print("Similarity matrix size: {0} by {1}".format(len(similarity_matrix), len(similarity_matrix[0])))
+    # Finished making the matrix. Convert to numpy for ease of processing
     return np.matrix(similarity_matrix), similars, ratings
 
 
@@ -95,6 +100,9 @@ def n_clustering(sim_matrix, similar_song_data, similar_ratings, *, num_clusters
     sim_matrix is a matrix of similarities between the songs
     similar_song_data is an iterator of (title, artist) values
     similar_ratings is an iterator of similarity ratings
+
+    This clusters the passed songs based on similarity using spectral clustering, providing cluster similarity
+    to the original song
     """
     if num_clusters is None:
         num_clusters = 5
@@ -208,6 +216,10 @@ def adaptive_clustering(sim_matrix, similars, ratings, *, top_size=20):
 
 
 def cluster_by_title_artist(title, artist, *, num_clusters=None, top_size=20):
+    """
+    A simple method helper that using adaptive clustering to predict the # of clusters
+        unless the number of clusters is specified
+    """
     # Collect the data
     sim_matrix, similars, ratings = get_similarity_matrix_by_title_artist(title, artist)
     # num_clusters = 10
@@ -453,7 +465,6 @@ if __name__ == "__main__":
     if len(sys.argv) > 3:
         if not len(sys.argv) % 2 == 1:
             raise ValueError("The number of arguments must be divisible by 2 or less than 2")
-        from itertools import tee
         """
         This should iterate through the arguments as ((title) (artist)) pairs
         then parse each with make_json_from_anywhere(title, artist)
@@ -473,10 +484,10 @@ if __name__ == "__main__":
     else:
         # Test function for no arguments
         title = """
-        dirty money
+        False Alarm
         """.strip()
         artist = """
-        weathers
+        The Weeknd
         """.strip()
 
     # Do some kind of clustering
