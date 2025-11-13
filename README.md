@@ -1,7 +1,6 @@
 # MusicMuse
-Visualization for music clusters based on pairwise similarity.
-This project takes songs similar to an input song
-then groups them based on what songs people tend to listen to together.
+An exploration tool for viewing music across different kinds of tastes.
+Groups all related music separately based on what is listened together, using spectral clustering on pairwise similarity.
 
 * Similarity refers to the % of people that like the first, also like the second.
 * Cluster size corresponds to the number of songs in the cluster.
@@ -9,16 +8,15 @@ then groups them based on what songs people tend to listen to together.
 * The angular distance between clusters corresponds to their average pairwise similarity.
 * Two clusters have the same color if there is a significant overlap in preference across some songs.
 
-A project for CS590V.
-
 ## Running the frontend
 Note: Running the frontend requires a spotify account
 
 Running the following will start up the server:
 ```bash
 cd front-end
-python -m SimpleHTTPServer 8000
+./run_server.sh
 ```
+
 You can then use your favorite browser to visit `localhost:8000`.
 
 ## Add songs through the backend
