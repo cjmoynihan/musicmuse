@@ -309,7 +309,7 @@ def fix_ordering(ordering, items):
     return [item for (i, item) in items]
 
 
-basic_json_filepath = ('jsons/', '.json')
+basic_json_filepath = ('songjson/', '.json')
 title_artist_separator = ' '
 def create_json(title, artist, *args, num_clusters = None, top_size = 20, fake_out=False):
     if num_clusters is not None:
@@ -355,7 +355,7 @@ def create_json(title, artist, *args, num_clusters = None, top_size = 20, fake_o
 
 
 def test_jsons():
-    os.makedirs("jsons")
+    os.makedirs("songjson")
     all_songs = converge_db.all_song_data()
     num_jsons = 10
     all_songs = (song_data for song_data in all_songs if len(converge_db.get_sorted_similars(*song_data)) >= 10)
@@ -460,9 +460,10 @@ if __name__ == "__main__":
         filename, artist = sys.argv
         add_many_songs(artist)
     else:
-        # make_json_from_anywhere("Africa", "toto")
+        # make_json_from_a/nywhere("Africa", "toto")
         # print(list(lastfm_api.get_top_songs("journey")))
         # add_many_songs("journey")
         # add_many_songs("Arctic Monkeys")
-        make_json_from_anywhere("Genghis Khan", "Miike Snow")
+        add_many_songs("Kesha", 10)
+        # make_json_from_anywhere("Genghis Khan", "Miike Snow")
 

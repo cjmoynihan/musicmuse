@@ -154,7 +154,7 @@ def create_json(track_id, num_clusters = 5, top_size = 20):
     clustering = n_clustering(track_id, num_clusters)
     title, artist = TrackReader.get_song(track_id)[0]
     json_obj = list()
-    with open('jsons/' + title + '.txt', 'w') as f:
+    with open('songjson/' + title + '.json', 'w') as f:
         for (i, (cluster, distance)) in enumerate(clustering):
             songs, artists = zip(*((TrackReader.get_song(tid)[0] for tid in cluster)))
             songs, artists = list(songs)[:top_size], list(artists)[:top_size]
