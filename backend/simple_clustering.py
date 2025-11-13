@@ -61,7 +61,7 @@ no_data_similarity = 0
 # no_data_similarity = 0.5
 
 
-def get_similarity_matrix_by_title_artist(title, artist, *, sim_limit=None):
+def get_similarity_matrix_by_title_artist(title, artist, *args, sim_limit=None):
     # print("Gathering similar songs")
     all_data = converge_db.get_sorted_similars(title, artist)
     # print("Found {0} similar songs".format(len(all_data)))
@@ -90,7 +90,7 @@ def get_similarity_matrix_by_title_artist(title, artist, *, sim_limit=None):
     return np.matrix(similarity_matrix), similars, ratings
 
 
-def n_clustering(sim_matrix, similar_song_data, similar_ratings, *, num_clusters=None, top_size=20):
+def n_clustering(sim_matrix, similar_song_data, similar_ratings, *args, num_clusters=None, top_size=20):
     """
     sim_matrix is a matrix of similarities between the songs
     similar_song_data is an iterator of (title, artist) values
@@ -156,7 +156,7 @@ def rate_clustering(sim_matrix, clustering):
     raise NotImplementedError()
 
 
-def adaptive_clustering(sim_matrix, similars, ratings, *, top_size=20):
+def adaptive_clustering(sim_matrix, similars, ratings, *args, top_size=20):
     """
     Very simple, increases clustering size while still splitting the largest group (tries to ignore noise)
     """
@@ -207,7 +207,7 @@ def adaptive_clustering(sim_matrix, similars, ratings, *, top_size=20):
     return clustering, cluster_sims
 
 
-def cluster_by_title_artist(title, artist, *, num_clusters=None, top_size=20):
+def cluster_by_title_artist(title, artist, *args, num_clusters=None, top_size=20):
     # Collect the data
     sim_matrix, similars, ratings = get_similarity_matrix_by_title_artist(title, artist)
     # num_clusters = 10
@@ -311,7 +311,7 @@ def fix_ordering(ordering, items):
 
 basic_json_filepath = ('jsons/', '.json')
 title_artist_separator = ' '
-def create_json(title, artist, *, num_clusters = None, top_size = 20, fake_out=False):
+def create_json(title, artist, *args, num_clusters = None, top_size = 20, fake_out=False):
     if num_clusters is not None:
         clustering, cluster_sims = cluster_by_title_artist(title, artist, num_clusters=num_clusters, top_size=top_size)
     else:
@@ -337,9 +337,20 @@ def create_json(title, artist, *, num_clusters = None, top_size = 20, fake_out=F
         }
         json_obj.append(cluster_dict)
     if not fake_out:
-        for json_filepath in (basic_json_filepath, ('../front-end/songjson/', '.json')):
-            with open("{0}{1}{2}{3}{4}".format(json_filepath[0], title.replace('/', ''), title_artist_separator, artist.replace('/', ''), json_filepath[1]), 'w') as f:
-                json.dump(json_obj, f)
+        # TODO: Definitely make local json directory a absolute location
+        # TODO: Or otherwise ensure that running this from a subdirectory doesn't break it!
+        # for json_filepath in (basic_json_filepath, ('../front-end/songjson/', '.json')):
+        #     with open("{0}{1}{2}{3}{4}".format(json_filepath[0], title.replace('/', ''), title_artist_separator, artist.replace('/', ''), json_filepath[1]), 'w+') as f:
+        #         json.dump(json_obj, f)
+        absolute_path = os.path.expanduser("~/PycharmProjects/musicmuse")
+        json_folder_path = absolute_path + '/' + "front-end/jsons"
+        try:
+            os.mkdir(json_folder_path)
+        except FileExistsError:
+            pass
+        song_json_filepath = title.replace('/', '') + title_artist_separator + artist.replace('/', '') + '.json'
+        with open(f"{json_folder_path}/{song_json_filepath}", 'w+') as f:
+            json.dump(json_obj, f)
         print("Finished json: {0} {1}".format(title, artist))
 
 
@@ -420,7 +431,7 @@ def make_json_from_anywhere(title, artist):
     create_json(title, artist)
 
 
-def add_many_songs(artist, *, num_songs=1):
+def add_many_songs(artist, *args, num_songs=1):
     """
     Adds the top songs by the artist until it has clustered num_songs songs, or reached all available songs by artist
     """

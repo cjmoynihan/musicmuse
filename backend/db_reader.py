@@ -148,10 +148,10 @@ class converge_db:
         """
         for (i, (other_title, other_artist, other_sim)) in enumerate(self.add_from_lastfm(title, artist)):
             # For now, make sure we don't call the service too many times/second
-            if i % (stop_at // 10) == 0:
-                print("{0}% complete ".format(i*2))
-                if i == stop_at:
-                    break
+            # Originally showed % complete on each song
+            print(f"Adding songs related to {other_title}, {other_artist}")
+            if i == stop_at:
+                break
             self.add_from_lastfm(other_title, other_artist)
         self.conn.commit()
 

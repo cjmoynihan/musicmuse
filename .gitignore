@@ -157,4 +157,5 @@ fabric.properties
 backend/jsons**
 backend/test_auto_k.py
 front-end/songjson/*
+front-end/jsons/*
 backend/*.private

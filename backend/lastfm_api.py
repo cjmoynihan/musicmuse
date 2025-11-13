@@ -81,7 +81,7 @@ def track_similars(title, artist, *, limit=None, last_call=False):
     if limit:
         data["limit"] = limit
     if not last_call or not previous_calls[0]:
-        time.sleep(1)
+        time.sleep(5)
     else:
         wait_time = 1 - (time.time() - previous_calls[0])
         wait_time = max([wait_time, 0])
