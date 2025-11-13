@@ -1,6 +1,8 @@
 """
 A file for managing any last_fm calls
 """
+import json.decoder
+
 # imports
 import requests
 import time
@@ -18,6 +20,7 @@ request_headers = {
 }
 request_endpoint = "http://ws.audioscrobbler.com/2.0/"
 # wait_time = 1  # Seconds between request calls
+api_call_min_wait = 2
 
 """
 Similar json format:
@@ -64,7 +67,7 @@ class DelayedApiCalls(Thread):
                 self.last_call = time.time()
 
 previous_calls = [None]
-def track_similars(title, artist, *, limit=None, last_call=False):
+def track_similars(title, artist, *args, limit=None, last_call=False, max_calls=5):
     """
     Queries the lastfm database to get the similar music data for a given title and artist
     If limit is provided, it will get no more than limit results
@@ -80,15 +83,21 @@ def track_similars(title, artist, *, limit=None, last_call=False):
     }
     if limit:
         data["limit"] = limit
-    if not last_call or not previous_calls[0]:
-        time.sleep(5)
+    if last_call and previous_calls[0]:
+        time.sleep(api_call_min_wait)
     else:
-        wait_time = 1 - (time.time() - previous_calls[0])
-        wait_time = max([wait_time, 0])
-        time.sleep(wait_time)
+        wait_time = api_call_min_wait - (time.time() - (previous_calls[0] or time.time()))
+        if wait_time > 0:
+            time.sleep(wait_time)
     resp = requests.get(url=request_endpoint, headers=request_headers, params=data)
     previous_calls[0] = time.time()
-    j = resp.json()
+    try:
+        j = resp.json()
+    except json.decoder.JSONDecodeError:
+        if max_calls:
+            return track_similars(title, artist, *args, limit, last_call, max_calls-1)
+        else:
+            raise
     return j
 
 def _get_popular():

@@ -343,7 +343,7 @@ def create_json(title, artist, *args, num_clusters = None, top_size = 20, fake_o
         #     with open("{0}{1}{2}{3}{4}".format(json_filepath[0], title.replace('/', ''), title_artist_separator, artist.replace('/', ''), json_filepath[1]), 'w+') as f:
         #         json.dump(json_obj, f)
         absolute_path = os.path.expanduser("~/PycharmProjects/musicmuse")
-        json_folder_path = absolute_path + '/' + "front-end/jsons"
+        json_folder_path = absolute_path + '/' + "front-end/songjson"
         try:
             os.mkdir(json_folder_path)
         except FileExistsError:
